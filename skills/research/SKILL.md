@@ -38,7 +38,7 @@ description: 제품 아이디어 설명이나 인터뷰 노트를 니즈/불만/
 
 ### 2. 인사이트 추출
 
-`${CLAUDE_PLUGIN_ROOT}/../core/methodology/interview-analysis.md`를 읽고,
+`${CLAUDE_PLUGIN_ROOT}/core/methodology/interview-analysis.md`를 읽고,
 그 문서에 정의된 절차를 그대로 따라 `personas/research/insights.md`를
 생성 또는 갱신하라. 아래는 핵심 규칙 요약이며, 두 문서가 어긋나면
 `interview-analysis.md` 원문이 우선한다.

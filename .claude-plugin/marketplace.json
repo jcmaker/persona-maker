@@ -1,0 +1,15 @@
+{
+  "name": "persona-maker",
+  "description": "Marketplace for the persona-maker plugin: bias-free, user-perspective decision making through confidence-graded personas",
+  "owner": {
+    "name": "jcmaker",
+    "email": "jcmaker0627@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "persona-maker",
+      "source": "./",
+      "description": "아이디어·인터뷰를 신뢰도 등급이 붙은 페르소나 카드·저니맵·particle 시각화로 만들고, 모든 의사결정을 페르소나 관점으로 검토하는 플러그인"
+    }
+  ]
+}

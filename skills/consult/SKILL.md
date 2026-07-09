@@ -78,7 +78,7 @@ description: 기능·디자인 의사결정을 페르소나 관점으로 미리 
 
 ### 5. 저장
 
-`${CLAUDE_PLUGIN_ROOT}/../core/templates/consultation.md`의 구조를 그대로 따라
+`${CLAUDE_PLUGIN_ROOT}/core/templates/consultation.md`의 구조를 그대로 따라
 협의 기록을 작성한다.
 
 - 저장 경로: `personas/consultations/YYYY-MM-DD-<주제-slug>.md`

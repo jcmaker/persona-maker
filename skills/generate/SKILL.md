@@ -36,12 +36,12 @@ description: personas/research/insights.md를 바탕으로 페르소나 카드�
 
 1. `persona_count`에 맞춰 구성을 정한다: `primary` 1명, `anti` 1명, 나머지는
    전부 `secondary`.
-2. `${CLAUDE_PLUGIN_ROOT}/../core/methodology/persona-framework.md` §2
+2. `${CLAUDE_PLUGIN_ROOT}/core/methodology/persona-framework.md` §2
    다양성 규칙을 읽고, secondary 슬롯끼리 서로 구별되도록 슬롯별 차별화 축을
    미리 배정한다 — `tech_savviness`(최소 2점 차), 사용 동기, 이용 맥락
    (`demographics.context`) 중 최소 2개 축이 슬롯마다 달라야 한다.
 3. `personas/research/insights.md` 상단의 `available_confidence`(및 표본 부족
-   경고 유무)와 `${CLAUDE_PLUGIN_ROOT}/../core/methodology/confidence-levels.md`
+   경고 유무)와 `${CLAUDE_PLUGIN_ROOT}/core/methodology/confidence-levels.md`
    규칙에 따라 각 슬롯의 `confidence` 등급을 결정한다. 인터뷰가 0건이면 전원
    `assumption`이다. 참가자가 3명 미만이면 어떤 슬롯도 `partial`을 넘지
    않는다.
@@ -56,11 +56,11 @@ description: personas/research/insights.md를 바탕으로 페르소나 카드�
 
 1. `personas/research/insights.md` 경로
 2. 해당 슬롯 정의(`id`, `role`, 차별화 축, `confidence`)
-3. 템플릿 경로 — `${CLAUDE_PLUGIN_ROOT}/../core/templates/persona-card.md`,
-   (anti가 아니면) `${CLAUDE_PLUGIN_ROOT}/../core/templates/journey-map.md`
-4. 방법론 문서 경로 — `${CLAUDE_PLUGIN_ROOT}/../core/methodology/persona-framework.md`,
-   `${CLAUDE_PLUGIN_ROOT}/../core/methodology/journey-mapping.md`,
-   `${CLAUDE_PLUGIN_ROOT}/../core/methodology/confidence-levels.md`
+3. 템플릿 경로 — `${CLAUDE_PLUGIN_ROOT}/core/templates/persona-card.md`,
+   (anti가 아니면) `${CLAUDE_PLUGIN_ROOT}/core/templates/journey-map.md`
+4. 방법론 문서 경로 — `${CLAUDE_PLUGIN_ROOT}/core/methodology/persona-framework.md`,
+   `${CLAUDE_PLUGIN_ROOT}/core/methodology/journey-mapping.md`,
+   `${CLAUDE_PLUGIN_ROOT}/core/methodology/confidence-levels.md`
 5. config(`language` 등)
 6. 출력 파일 경로 — `personas/cards/persona-NN-<slug>.md`, (anti가 아니면)
    `personas/journeys/journey-pNN.md` (`NN`은 슬롯 `id`의 번호, `<slug>`는
@@ -92,7 +92,7 @@ description: personas/research/insights.md를 바탕으로 페르소나 카드�
 
 1. 기존 카드 전체와 `personas/research/insights.md`의 신규 인사이트를
    대조한다.
-2. `${CLAUDE_PLUGIN_ROOT}/../core/methodology/confidence-levels.md` §2(승격
+2. `${CLAUDE_PLUGIN_ROOT}/core/methodology/confidence-levels.md` §2(승격
    규칙)·§3(강등 규칙)을 적용한다.
    - 신규 `[증거]` 항목이 어떤 페르소나 속성과 실제로 대응하는지 확인하고,
      대응이 확인된 것만 `sources`에 추가한다(억지 연결 금지).

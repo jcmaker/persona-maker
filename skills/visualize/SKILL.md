@@ -28,7 +28,7 @@ particle 기반 시각화 HTML(`personas/index.html`)을 생성하고, 로컬 �
 디렉토리의 `template.html`)을 그대로 쓴다.
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/../core/visualizer/build.py --personas-dir personas
+python3 ${CLAUDE_PLUGIN_ROOT}/core/visualizer/build.py --personas-dir personas
 ```
 
 - 표준 출력(stdout)에는 생성된 `index.html`의 경로 한 줄이 찍힌다.
@@ -52,37 +52,20 @@ stderr에 한 줄 이상 출력됐다면, 각 경고를 다음 형식으로 사�
 
 ### 3. 서버 오픈
 
-**3-1. 기존 서버 재사용 확인**
-
-8765부터 8775까지 순서대로 아래 명령으로 이미 이 프로젝트를 서빙 중인 서버가
-있는지 확인한다:
+아래 스크립트를 실행한다. 8765~8775 범위에서 이미 서빙 중인 서버가 있으면
+재사용하고, 없으면 빈 포트에 `python3 -m http.server`를 백그라운드로 띄운 뒤
+접속 URL을 stdout으로 돌려준다:
 
 ```bash
-curl -s -o /dev/null -w "%{http_code}" --max-time 1 http://localhost:<port>/index.html
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/serve.sh personas
 ```
 
-`200`을 반환하는 포트를 찾으면 그 서버를 재사용한다 — 새 프로세스를 띄우지 말고
-`http://localhost:<port>/index.html`을 사용자에게 다시 안내한 뒤 4단계로 넘어간다.
-
-**3-2. 새 서버 기동**
-
-재사용할 서버가 없으면 `8765`부터 시작해 아래 절차를 반복한다(최대 `8775`까지,
-총 11개 포트 시도):
-
-1. 다음 명령을 백그라운드로 실행한다:
-   ```bash
-   python3 -m http.server <port> --directory personas
-   ```
-2. 실행 직후 출력을 확인한다.
-   - 성공 조건: `Serving HTTP on ... port <port> ...` 로그가 찍히고 에러가 없다.
-   - 실패 조건: `OSError` 또는 `Address already in use`가 출력에 보인다. 이 경우
-     해당 프로세스를 종료하고 포트 번호를 1 증가시켜 1번부터 다시 시도한다.
-3. 성공했다면 `curl -s -o /dev/null -w "%{http_code}" --max-time 1 http://localhost:<port>/index.html`로
-   `200`이 반환되는지 최종 확인한다.
-
-11개 포트 모두 실패하면 사용자에게 실패 사실을 알리고, 다른 포트를 직접 지정해
-`python3 -m http.server <원하는 포트> --directory personas`를 수동 실행하도록
-안내한 뒤 중단한다.
+- exit code 0이면 stdout의 URL(`http://localhost:<port>/index.html`)을
+  사용자에게 안내하고 4단계로 넘어간다.
+- exit code가 0이 아니면 stderr 메시지를 사용자에게 보여준다. 모든 포트가
+  사용 중인 경우이므로, 사용자가 직접
+  `python3 -m http.server <원하는 포트> --directory personas`를 실행하도록
+  안내한 뒤 중단한다.
 
 ### 4. 완료 안내
 
