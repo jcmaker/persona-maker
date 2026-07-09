@@ -17,6 +17,12 @@ Claude 플러그인(`claude-plugin/`)의 init/research/generate/visualize/consul
 `codex-skill/` 디렉토리 기준 상대 경로**다(`codex-skill/`과 `core/`는 리포
 루트의 형제 디렉토리이므로 `${CLAUDE_PLUGIN_ROOT}` 같은 변수는 쓰지 않는다).
 
+**경로 해석 규칙 (중요):** 작업 시작 시 이 SKILL.md가 설치된 디렉토리의
+절대 경로를 확인해 `<SKILL_DIR>`로 삼아라. 본문의 `../core/...` 경로는 전부
+`<SKILL_DIR>/../core/...`로 해석해 **절대 경로로** 읽고 실행한다. 사용자
+프로젝트의 CWD 기준 상대 경로로 실행하면 안 된다 — `personas/` 산출물 경로만
+사용자 프로젝트 CWD 기준이다.
+
 ## 모드 판별
 
 사용자 요청을 아래 표에 대조해 모드를 정하라. 두 모드에 걸치거나 애매하면
@@ -245,13 +251,14 @@ research 스킬 예시를 따른다(니즈/불만/행동 섹션, 각 항목에 `
 
 ### 1. 빌드 실행
 
-아래 명령을 그대로 실행한다(이 SKILL.md 위치, 즉 `codex-skill/` 기준
-상대 경로). 출력·템플릿 경로는 지정하지 않는다 — `build.py` 기본값(출력:
-`personas/index.html`, 템플릿: `build.py`와 같은 디렉토리의
-`template.html`)을 그대로 쓴다.
+아래 명령을 실행한다. `<SKILL_DIR>`은 문서 서두의 경로 해석 규칙대로 이
+SKILL.md가 위치한 디렉토리의 절대 경로다(사용자 프로젝트 CWD에서 실행해도
+동작해야 하므로 절대 경로 사용). 출력·템플릿 경로는 지정하지 않는다 —
+`build.py` 기본값(출력: `personas/index.html`, 템플릿: `build.py`와 같은
+디렉토리의 `template.html`)을 그대로 쓴다.
 
 ```bash
-python3 ../core/visualizer/build.py --personas-dir personas
+python3 <SKILL_DIR>/../core/visualizer/build.py --personas-dir personas
 ```
 
 - stdout에는 생성된 `index.html` 경로 한 줄이 찍힌다.
