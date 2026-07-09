@@ -1,97 +1,139 @@
-# persona-maker
+<div align="center">
 
-아이디어나 인터뷰 노트를 주면, **신뢰도 등급이 붙은 페르소나 카드·저니맵·particle 시각화**를 만들어주는 Claude Code 플러그인.
+![persona-maker](docs/assets/header.svg)
 
-디자이너·개발자·기획자가 "내 취향"이 아니라 **사용자의 시각**으로 의사결정하도록, 근거 수준을 항상 드러내는 기준점을 제공합니다. 이후의 모든 기능·디자인 결정은 `/persona-maker:consult`로 페르소나들에게 미리 "물어볼" 수 있습니다.
+**Turn ideas and interviews into confidence-graded personas, journey maps, and particle visualizations — then pressure-test every decision from your users' perspective.**
 
-## 왜 신뢰도 등급인가
+A [Claude Code](https://claude.com/claude-code) plugin (+ a Codex adapter) for designers, developers, and PMs.
 
-LLM이 합성한 페르소나는 실제보다 성공적이고 호의적인 인물로 왜곡되고(positivity bias), 서로 비슷해지는(정체성 평면화) 문제가 학술적으로 확인되어 있습니다. persona-maker는 이를 두 겹으로 방어합니다 — 생성 규칙(반대할 결정 3개+, 회피 행동 필수, 전원 긍정 감정 금지)과 **신뢰도 3등급**:
+[Install](#install) · [Quick start](#quick-start) · [How it works](#how-it-works) · [Why confidence grades](#why-confidence-grades) · [Contributing](CONTRIBUTING.md)
 
-| 등급 | 조건 | 표시 |
-|------|------|------|
-| ⚪ `assumption` | 아이디어만으로 AI 생성 | "실사용자 검증 전 중요 결정 금지" 배너 + 흐릿한 점선 파티클 |
-| 🟡 `partial` | 인터뷰 1~2건이 일부 속성 뒷받침 | 검증 속성 / 가정 속성 구분 표기 |
-| 🟢 `validated` | 인터뷰 3건 이상이 핵심 속성 뒷받침 | 속성별 출처(`[I-NN]`) 인용 + 선명한 파티클 |
+[![License: MIT](https://img.shields.io/badge/License-MIT-7dd3fc.svg)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-pytest-6ee7a0.svg)](tests/)
+[![Self-contained viz](https://img.shields.io/badge/visualization-zero%20deps-f6d860.svg)](core/visualizer/)
 
-인터뷰를 추가하면 `generate --update`가 전체 재생성 없이 등급·속성만 승격/강등합니다 — 페르소나는 **살아있는 문서**입니다.
+</div>
 
-## 설치
+---
 
-Claude Code에서:
+## Demo
+
+The visualization is a **self-contained single HTML file** (Canvas 2D, zero external dependencies). Four scenes, each answering one question about your users:
+
+![persona-maker demo](docs/assets/demo.gif)
+
+---
+
+## Why this exists
+
+Designers and developers make product decisions on taste and gut feeling — and that causes rework and churn. persona-maker gives you a **user-perspective decision anchor** grounded in research best practices, so you decide from what users want, not what you happen to like.
+
+The catch with AI-generated personas is well documented: LLMs skew them toward more successful, agreeable, homogeneous people than reality (*positivity bias* and *identity flattening*). persona-maker defends against this on two fronts — generation rules (every persona must have ≥3 decisions it would push back on, a real avoidance behavior, and a non-all-positive emotion curve) **and** an explicit confidence grade on every persona.
+
+## Why confidence grades
+
+![confidence grading system](docs/assets/confidence.svg)
+
+Every persona carries a grade that says how strong its evidence is. Add interviews and `generate --update` promotes grades **without regenerating everything** — demoting them if a new interview contradicts an assumption. Personas are a **living document**, not a one-shot artifact.
+
+| Grade | Condition | In the visualization |
+|-------|-----------|----------------------|
+| ⚪ `assumption` | Idea only, 0 interviews | Faint **dashed** particles + "don't decide on this yet" banner |
+| 🟡 `partial` | 1–2 interviews back some attributes | Validated vs. assumed marked per attribute |
+| 🟢 `validated` | 3+ interviews back core attributes | Solid bright particles + per-attribute `[I-NN]` citations |
+
+## How it works
+
+![five-command workflow](docs/assets/workflow.svg)
+
+| Command | What it does |
+|---------|--------------|
+| `/persona-maker:init` | Scaffold `personas/` + `config.json` |
+| `/persona-maker:research` | Idea or interview notes → evidence-tagged insights |
+| `/persona-maker:generate` | 5 personas (primary 1 + secondary 3 + anti 1) + journey maps |
+| `/persona-maker:visualize` | Build the particle HTML and open a local server |
+| `/persona-maker:consult` | Ask the personas how they'd react to a decision |
+
+The four visualization scenes:
+
+- **Constellation** — every persona as a particle cluster; confidence is the visual language (dashed/faint = assumption, solid/bright = validated). Click a cluster for the full card.
+- **Needs Landscape** — needs/frustrations merged into nodes sized by how many personas share them, so the most common pain point is obvious at a glance.
+- **Journey Emotions** — each persona's 5-stage emotion curve, with the low point auto-marked as an "opportunity."
+- **Decision Log** — accumulated consultations, personas splitting into accept / neutral / reject, with a disclosure when the basis includes assumption-grade personas.
+
+## Install
+
+**Claude Code:**
 
 ```
 /plugin marketplace add jcmaker/persona-maker
 /plugin install persona-maker@persona-maker
 ```
 
-Codex는 `codex-skill/SKILL.md`를 스킬 디렉토리에 등록하세요 (기본 모델만 `gpt-5-mini`로 다르고 워크플로우는 동일).
+**Codex:** register [`codex-skill/SKILL.md`](codex-skill/SKILL.md) as a skill. Same workflow; the default generation model is `gpt-5-mini` instead of `haiku`.
 
-## 사용법
-
-```
-/persona-maker:init          personas/ 구조 + config.json 생성
-/persona-maker:research      아이디어 또는 인터뷰 노트 → 증거 태그가 붙은 인사이트
-/persona-maker:generate      페르소나 5명(primary 1 + secondary 3 + anti 1) + 저니맵
-/persona-maker:visualize     particle 시각화 빌드 + 로컬 서버 오픈
-/persona-maker:consult       "이 결정, 페르소나들은 어떻게 볼까?"
-```
-
-전형적인 흐름:
-
-1. `init` → `research`에 아이디어 한 문단 → `generate` → `visualize` — 전원 ⚪ (화면의 점선 파티클이 "아직 가정"임을 계속 상기시킴)
-2. 실사용자 인터뷰 후 `research`에 노트 붙여넣기 (참가자는 별칭으로 — 실명 저장 안 함)
-3. `generate --update` — 변경된 카드만 갱신, ⚪ → 🟡 → 🟢
-4. 기능 결정마다 `consult` — 반응·합의점·충돌점이 기록되고 Decision Log 씬에 누적
-
-### 시각화 4개 씬
-
-| 씬 | 답하는 질문 |
-|----|-------------|
-| **Constellation** | 우리 사용자들은 누구이고, 근거는 얼마나 단단한가? |
-| **Needs Landscape** | 가장 많은 페르소나가 공유하는 pain point는? |
-| **Journey Emotions** | 감정이 가장 꺾이는 단계(= 개선 기회)는 어디인가? |
-| **Decision Log** | 지금까지의 결정에 페르소나들은 어떻게 반응했나? |
-
-시각화는 의존성 0의 **자기완결 단일 HTML**(Canvas 2D)로 생성됩니다.
-
-## 비용 설계
-
-슬롯 설계·검증·등급 판정 같은 판단 작업은 메인 세션이, 대량 텍스트 생성은 저비용 모델이 담당합니다 (페르소나 1명당 서브에이전트 1개 병렬). `personas/config.json`에서 언제든 변경:
-
-| 키 | 기본값 (Claude / Codex) | 설명 |
-|----|------------------------|------|
-| `model` | `haiku` / `gpt-5-mini` | 생성·상담 판정용 저비용 모델 |
-| `persona_count` | `5` | 총 인원 (3~10) |
-| `language` | `ko` | 산출물 언어 |
-
-## 리포 구조
+## Quick start
 
 ```
-.claude-plugin/      # plugin.json + marketplace.json
-commands/            # /persona-maker:* 커맨드 5종
-skills/              # init · research · generate · visualize · consult
-agents/              # persona-generator (haiku, 저비용 생성 전담)
+/persona-maker:init
+/persona-maker:research   I'm building an inventory & ordering app for solo cafe owners…
+/persona-maker:generate
+/persona-maker:visualize
+```
+
+That gets you 5 personas (all ⚪ assumption at first — the dashed particles keep reminding you the evidence is still a guess), journey maps, and the live visualization. Then, after real interviews:
+
+```
+/persona-maker:research    (paste interview notes — participants stored by alias)
+/persona-maker:generate --update    (⚪ → 🟡 → 🟢, only changed cards rewritten)
+/persona-maker:consult     Should onboarding force sign-up, or offer a guest mode?
+```
+
+## Language
+
+The plugin's instructions are in English, but **output follows your language**. `init` sets `config.language` to whatever language you're speaking (falling back to `en`), and every generated artifact — cards, journey maps, consultations — is written in that language. Change it anytime in `personas/config.json`.
+
+## Configuration — `personas/config.json`
+
+| Key | Default (Claude / Codex) | Description |
+|-----|--------------------------|-------------|
+| `model` | `haiku` / `gpt-5-mini` | Low-cost model for bulk generation & consultation judgment |
+| `persona_count` | `5` | Total personas (3–10) |
+| `language` | your language (`en` fallback) | Output language |
+
+**Cost design:** judgment work (slot design, validation, grade re-evaluation) runs on the main session; only bulk text generation goes to the low-cost model, one subagent per persona in parallel.
+
+## Repository layout
+
+```
+.claude-plugin/      plugin.json + marketplace.json
+commands/            /persona-maker:* command wrappers
+skills/              init · research · generate · visualize · consult
+agents/              persona-generator (haiku, generation-only)
 core/
-├── methodology/     # 페르소나·저니맵·신뢰도·인터뷰 분석 방법론 (단일 진실 원천)
-├── templates/       # 산출물 마크다운 템플릿
-└── visualizer/      # build.py (Python, 표준 라이브러리만) + template.html (Canvas 2D)
-scripts/             # serve.sh (로컬 서버) · smoke_template.mjs (템플릿 무결성 검사)
-codex-skill/         # Codex 단일 파일 어댑터
-tests/               # pytest 스위트 + fixture
+├── methodology/     persona, journey, confidence, interview-analysis rules (single source of truth)
+├── templates/       artifact markdown templates
+└── visualizer/      build.py (Python, stdlib only) + template.html (Canvas 2D, zero deps)
+scripts/             serve.sh (Bash) · smoke_template.mjs (Node)
+codex-skill/         single-file Codex adapter
+tests/               pytest suite + fixtures
 ```
 
-## 개발
+## Development
 
 ```bash
-python -m pytest tests/ -v                      # 빌더 테스트
-node scripts/smoke_template.mjs                 # 템플릿 무결성 4종 검사
+python -m pytest tests/ -v                        # builder tests (9)
+node scripts/smoke_template.mjs                   # template integrity (marker/JSON/JS/self-contained)
 python3 core/visualizer/build.py --personas-dir tests/fixtures/personas --output /tmp/preview.html
-bash scripts/serve.sh tests/fixtures/personas   # (빌드 후) 로컬 서버
+bash scripts/serve.sh tests/fixtures/personas     # (after building) local server
 ```
 
-설계 문서: `docs/superpowers/specs/` · 구현 플랜: `docs/superpowers/plans/` · PRD: `PRD.md`
+Design docs live in [`docs/superpowers/`](docs/superpowers/); the product requirements are in [`PRD.md`](PRD.md).
 
-## 라이선스
+## Contributing
 
-MIT
+Issues and PRs welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). Good first areas: new visualization scenes, additional methodology checks, and adapters for other agent runtimes. The methodology under `core/methodology/` is the single source of truth; the Claude and Codex adapters only differ in how they dispatch models.
+
+## License
+
+[MIT](LICENSE)
