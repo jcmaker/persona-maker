@@ -1,7 +1,9 @@
 """persona-maker visualizer builder. Stdlib only."""
+import argparse
 import json
 import pathlib
 import re
+import sys
 
 def _parse_value(raw):
     raw = raw.strip()
@@ -112,3 +114,51 @@ def collect(personas_dir):
         "consultations": consultations,
         "warnings": warnings,
     }
+
+MARKER_RE = re.compile(r"/\*__PERSONA_DATA__\*/.*?/\*__END__\*/", re.DOTALL)
+
+def build_html(personas_dir, template_text):
+    """personas_dir을 collect()로 읽어 template_text의
+    /*__PERSONA_DATA__*/.../*__END__*/ 마커를 실제 JSON 데이터로 치환한 HTML 문자열을 돌려준다.
+    마커가 없으면 ValueError."""
+    if not MARKER_RE.search(template_text):
+        raise ValueError(
+            "template에서 /*__PERSONA_DATA__*/.../*__END__*/ 마커를 찾을 수 없습니다"
+        )
+    data = collect(personas_dir)
+    payload = json.dumps(data, ensure_ascii=False)
+    # persona body(마크다운)에 "</script>" 등이 섞여 있어도 HTML 파싱이 깨지지 않도록 이스케이프.
+    payload = payload.replace("</", "<\\/")
+    replacement = "/*__PERSONA_DATA__*/" + payload + "/*__END__*/"
+    return MARKER_RE.sub(lambda _m: replacement, template_text, count=1)
+
+def main():
+    parser = argparse.ArgumentParser(description="persona-maker 시각화 HTML을 조립한다.")
+    parser.add_argument("--personas-dir", default="personas")
+    parser.add_argument(
+        "--template",
+        default=str(pathlib.Path(__file__).parent / "template.html"),
+    )
+    parser.add_argument("--output", default=None)
+    args = parser.parse_args()
+
+    personas_dir = pathlib.Path(args.personas_dir)
+    template_path = pathlib.Path(args.template)
+    output_path = pathlib.Path(args.output) if args.output else personas_dir / "index.html"
+
+    if not template_path.is_file():
+        print(f"템플릿 파일을 찾을 수 없습니다: {template_path}", file=sys.stderr)
+        sys.exit(1)
+
+    template_text = template_path.read_text(encoding="utf-8")
+    html = build_html(personas_dir, template_text)
+
+    warnings = collect(personas_dir)["warnings"]
+    for w in warnings:
+        print(w, file=sys.stderr)
+
+    output_path.write_text(html, encoding="utf-8")
+    print(str(output_path))
+
+if __name__ == "__main__":
+    main()
