@@ -1,31 +1,31 @@
 ---
 id: p02
-name: "박준호"
+name: "Junho Park"
 role: secondary
-archetype: "결과만 보고 싶은 대표"
+archetype: "CEO who only wants the outcome"
 confidence: validated
-sources: ["research/interview-01-민지.md", "research/interview-02-현우.md", "research/interview-03-지훈.md"]
-demographics: { age: 45, occupation: "스타트업 대표", context: "5인 스타트업 창업자" }
-goals: ["빠른 매출 성장", "적은 인력으로 많은 의사결정", "리스크 최소화"]
-frustrations: ["디자인 논의가 너무 길다", "숫자 없는 보고는 신뢰하지 않는다", "실무진 설명이 너무 전문적"]
-behaviors: ["회의는 15분 안에 끝내길 원함", "요약 슬라이드 1장만 확인", "결정은 데이터 인용 있을 때만 승인"]
+sources: ["research/interview-01-minji.md", "research/interview-02-hyunwoo.md", "research/interview-03-jihoon.md"]
+demographics: { age: 45, occupation: "Startup CEO", context: "Founder of a 5-person startup" }
+goals: ["Fast revenue growth", "Many decisions with few people", "Minimize risk"]
+frustrations: ["Design discussions run too long", "Distrusts reports with no numbers", "Team explanations are too technical"]
+behaviors: ["Wants meetings done within 15 minutes", "Reviews only a one-slide summary", "Approves decisions only when data is cited"]
 tech_savviness: 2
-quote: "그래서 매출이 오른다는 거예요, 안 오른다는 거예요?"
+quote: "So does revenue go up, or not?"
 ---
 
-## 서사
+## Narrative
 
-박준호는 5인 스타트업의 대표로, 개발과 디자인 실무에는 깊이 관여하지 않는다. 그는 매 회의마다 "그래서 결론이 뭔데?"를 먼저 묻고, 디자인이나 리서치 용어로 길게 설명하는 것을 싫어한다. 실무팀이 근거를 들고 오더라도 숫자와 결론이 앞에 없으면 신뢰하지 않으며, 결정이 늦어지는 것을 가장 큰 리스크로 여긴다.
+Junho is the CEO of a 5-person startup and does not get deeply involved in engineering or design work. In every meeting he asks "so what's the conclusion?" first, and he dislikes long explanations in design or research jargon. Even when the team brings evidence, he distrusts it if the numbers and conclusion aren't up front, and he sees slow decisions as the biggest risk.
 
-## 니즈 상세
+## Needs detail
 
-- 회의 시작 30초 안에 핵심 결론을 파악할 수 있어야 한다.
-- 리서치 결과는 매출/전환 지표와 연결되어야 설득력을 가진다.
-- 실무진의 전문 용어보다 한 줄 요약을 선호한다.
-- 의사결정에 걸리는 시간을 최소화하고 싶어 한다.
+- He needs to grasp the key conclusion within 30 seconds of a meeting starting.
+- Research results are only persuasive when tied to revenue/conversion metrics.
+- He prefers a one-line summary over the team's technical terminology.
+- He wants to minimize the time a decision takes.
 
-## 이 페르소나가 반대할 결정들
+## Decisions this persona would push back on
 
-- 근거 없이 "사용자 경험이 좋아진다"는 식의 정성적 설명만 하는 것
-- 결론 없이 리서치 과정만 장황하게 설명하는 것
-- 매출과 무관해 보이는 디자인 디테일에 시간을 쓰는 것
+- Giving only qualitative explanations like "the user experience improves," with no evidence
+- Explaining the research process at length with no conclusion
+- Spending time on design details that seem unrelated to revenue

@@ -1,29 +1,29 @@
 ---
 id: p03
-name: "이하나"
+name: "Hana Lee"
 role: anti
-archetype: "체험판만 켜보고 사라지는 사용자"
+archetype: "Opens the trial, then disappears"
 sources: []
-demographics: { age: 24, occupation: "프리랜서 마케터", context: "여러 SaaS 체험판을 동시에 켜두는 습관" }
-goals: ["일단 무료로 써보기", "회원가입 없이 빠르게 확인"]
-frustrations: ["가입 절차가 길면 바로 이탈", "이메일 인증 요구 시 짜증"]
-behaviors: ["랜딩 페이지만 보고 판단", "가입 폼이 3단계 넘으면 닫음", "리뷰만 훑고 결정"]
+demographics: { age: 24, occupation: "Freelance marketer", context: "Habit of keeping many SaaS trials open at once" }
+goals: ["Just try it for free first", "Check it quickly without signing up"]
+frustrations: ["Bounces immediately if signup is long", "Annoyed when email verification is required"]
+behaviors: ["Judges from the landing page alone", "Closes the signup form if it exceeds 3 steps", "Decides after skimming reviews only"]
 tech_savviness: 3
-quote: "가입까지 3단계면 저는 그냥 나가요"
+quote: "If signing up takes 3 steps, I just leave"
 ---
 
-## 서사
+## Narrative
 
-이하나는 여러 SaaS 제품의 체험판을 동시에 켜두고 비교하는 프리랜서 마케터다. 그녀는 제품의 핵심 가치를 판단하기 전에 회원가입 절차 자체에서 이탈하는 경우가 많다. 가입 폼이 길거나 이메일 인증을 요구하면 곧바로 다른 탭으로 넘어간다. 이 페르소나는 "회원가입을 강제해야 한다"는 결정에 반대하는 근거로 활용된다.
+Hana is a freelance marketer who keeps several SaaS trials open at once to compare them. She often bounces at the signup step itself, before she even judges the product's core value. If the signup form is long or requires email verification, she jumps to another tab right away. This persona serves as evidence against a decision to "force sign-up."
 
-## 니즈 상세
+## Needs detail
 
-- 가입 없이 핵심 기능을 먼저 체험하고 싶다.
-- 최소한의 정보 입력으로 빠르게 결과를 확인하고 싶다.
-- 이메일 인증 같은 마찰 요소가 있으면 즉시 이탈한다.
+- She wants to try the core features first, without signing up.
+- She wants to see results quickly with minimal information entry.
+- Any friction like email verification makes her leave immediately.
 
-## 이 페르소나가 반대할 결정들
+## Decisions this persona would push back on
 
-- 온보딩 첫 화면에서 회원가입을 강제하는 것
-- 이메일 인증을 완료해야만 핵심 기능을 볼 수 있게 막는 것
-- 가입 폼에 3단계 이상의 입력을 요구하는 것
+- Forcing sign-up on the first onboarding screen
+- Gating the core features behind completing email verification
+- Requiring 3 or more steps in the signup form

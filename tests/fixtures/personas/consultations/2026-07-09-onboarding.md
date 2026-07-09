@@ -1,35 +1,28 @@
 ---
 date: "2026-07-09"
-topic: "온보딩에 회원가입 강제 여부"
+topic: "Whether to force sign-up during onboarding"
 reactions: { p01: reject, p02: neutral, p03: reject }
 ---
 
-## 질문
+## Question
 
-"온보딩 첫 화면에서 회원가입(이메일 인증 포함)을 강제해야 할까요, 아니면 핵심 기능을 먼저 체험시킨 뒤
-나중에 가입을 유도해야 할까요?"
+"Should we force sign-up (including email verification) on the first onboarding screen, or let users try the core features first and prompt sign-up later?"
 
-## 페르소나별 반응
+## Per-persona reactions
 
-- **김서연 (p01, primary) — 반대**: "가입부터 시키면 저도 일단 나가서 다른 도구 먼저 볼 것 같아요.
-  결과물을 먼저 보여주고 그 다음에 가입을 물어보는 게 맞다고 생각해요."
-- **박준호 (p02, secondary) — 중립**: "가입 절차보다 결국 전환율 숫자가 어떻게 나오는지가 중요해요.
-  두 가지 다 A/B로 테스트해서 매출에 더 도움 되는 쪽으로 가면 됩니다."
-- **이하나 (p03, anti) — 반대**: "가입까지 3단계면 저는 그냥 나가요. 최소한 핵심 기능 한 번은 가입 없이
-  체험하게 해주세요."
+- **Seoyeon Kim (p01, primary) — reject**: "If you make me sign up first, I'd probably leave and check another tool first too. I think showing the output first and then asking to sign up is the right order."
+- **Junho Park (p02, secondary) — neutral**: "What matters in the end is the conversion numbers, not the signup flow. A/B test both and go with whichever helps revenue more."
+- **Hana Lee (p03, anti) — reject**: "If signing up takes 3 steps, I just leave. At least let me try the core feature once without signing up."
 
-## 합의점
+## Agreements
 
-- 핵심 기능을 먼저 체험시키고, 결과물(리포트/카드 등)을 저장하려는 시점에 가입을 요구하는 방향에 대체로 동의.
-- 이메일 인증은 가입 직후가 아니라 며칠 뒤 리마인더로 미뤄도 된다는 의견이 다수.
+- Broad agreement on trying the core features first and requiring sign-up at the point where users want to save their output (report/card, etc.).
+- Most feel email verification can be deferred to a reminder a few days later, not required right at sign-up.
 
-## 충돌점
+## Conflicts
 
-- 박준호는 전환율 데이터가 나오기 전까지는 어느 쪽도 확정하지 말고 A/B 테스트를 우선하자는 입장이라,
-  김서연·이하나의 "무조건 먼저 체험" 입장과는 완전히 일치하지 않는다.
+- Junho wants to fix nothing until conversion data is in and prefers to A/B test first, which does not fully align with Seoyeon's and Hana's "try first, no matter what" stance.
 
-## 신뢰도 고지
+## Confidence disclosure
 
-이 협의는 실제 사용자 인터뷰가 아니라 페르소나 시뮬레이션 결과다. 박준호(validated)는 인터뷰 3건에
-근거하지만, 김서연·이하나는 assumption 단계 페르소나이므로 이 합의점을 실제 의사결정 근거로 쓰기 전
-반드시 실사용자 검증을 거쳐야 한다.
+This consultation is a persona simulation, not real user interviews. Junho (validated) is backed by 3 interviews, but Seoyeon and Hana are assumption-grade personas, so this agreement must be validated with real users before it is used as a basis for an actual decision.

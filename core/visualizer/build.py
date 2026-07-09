@@ -52,22 +52,23 @@ def parse_frontmatter(text):
         meta[key.strip()] = _parse_value(val)
     return meta, m.group(2)
 
-DEFAULT_CONFIG = {"model": "haiku", "persona_count": 5, "language": "ko"}
+DEFAULT_CONFIG = {"model": "haiku", "persona_count": 5, "language": "en"}
 REQUIRED_CARD_FIELDS = ["id", "name", "role", "confidence"]
 
 def _collect_markdown(dir_path, warnings):
-    """cards/journeys/consultations 등 md 디렉토리를 정렬 순회하며 frontmatter를 파싱한다.
-    파싱 실패 파일은 건너뛰고 warnings에 기록한다. 크래시하지 않는다."""
+    """Walk a markdown directory (cards/journeys/consultations) in sorted order and
+    parse frontmatter. Files that fail to parse are skipped and logged to warnings.
+    Never crashes."""
     items = []
     if not dir_path.is_dir():
-        warnings.append(f"{dir_path.name}/ 디렉토리를 찾을 수 없습니다 ({dir_path})")
+        warnings.append(f"directory {dir_path.name}/ not found ({dir_path})")
         return items
     for path in sorted(dir_path.glob("*.md")):
         text = path.read_text(encoding="utf-8")
         try:
             meta, body = parse_frontmatter(text)
         except ValueError as e:
-            warnings.append(f"{path.name}: frontmatter 파싱 실패 - {e}")
+            warnings.append(f"{path.name}: frontmatter parse failed - {e}")
             continue
         meta["body"] = body.strip()
         items.append(meta)
@@ -76,18 +77,18 @@ def _collect_markdown(dir_path, warnings):
 def _load_config(personas_dir, warnings):
     config_path = personas_dir / "config.json"
     if not config_path.is_file():
-        warnings.append(f"config.json을 찾을 수 없어 기본값을 사용합니다 ({config_path})")
+        warnings.append(f"config.json not found, using defaults ({config_path})")
         return dict(DEFAULT_CONFIG)
     try:
         return json.loads(config_path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError) as e:
-        warnings.append(f"config.json 파싱 실패 - 기본값을 사용합니다: {e}")
+        warnings.append(f"config.json parse failed, using defaults: {e}")
         return dict(DEFAULT_CONFIG)
 
 def collect(personas_dir):
-    """personas_dir(config.json, cards/, journeys/, consultations/)을 읽어
-    시각화에 필요한 데이터를 모은다. 파싱/검증 실패는 절대 크래시로 이어지지 않고
-    warnings 리스트에 쌓인다."""
+    """Read personas_dir (config.json, cards/, journeys/, consultations/) and gather
+    the data the visualization needs. Parse/validation failures never crash — they
+    accumulate in the warnings list."""
     personas_dir = pathlib.Path(personas_dir)
     warnings = []
 
@@ -105,7 +106,7 @@ def collect(personas_dir):
                 p["confidence"] = "assumption"
             else:
                 p[field] = ""
-            warnings.append(f"{pid}: 필수 필드 '{field}' 누락")
+            warnings.append(f"{pid}: missing required field '{field}'")
 
     return {
         "config": config,
@@ -118,22 +119,23 @@ def collect(personas_dir):
 MARKER_RE = re.compile(r"/\*__PERSONA_DATA__\*/.*?/\*__END__\*/", re.DOTALL)
 
 def build_html(personas_dir, template_text):
-    """personas_dir을 collect()로 읽어 template_text의
-    /*__PERSONA_DATA__*/.../*__END__*/ 마커를 실제 JSON 데이터로 치환한 HTML 문자열을 돌려준다.
-    마커가 없으면 ValueError."""
+    """Read personas_dir via collect() and return an HTML string where the
+    /*__PERSONA_DATA__*/.../*__END__*/ marker in template_text is replaced with the
+    actual JSON data. Raises ValueError if the marker is absent."""
     if not MARKER_RE.search(template_text):
         raise ValueError(
-            "template에서 /*__PERSONA_DATA__*/.../*__END__*/ 마커를 찾을 수 없습니다"
+            "marker /*__PERSONA_DATA__*/.../*__END__*/ not found in template"
         )
     data = collect(personas_dir)
     payload = json.dumps(data, ensure_ascii=False)
-    # persona body(마크다운)에 "</script>" 등이 섞여 있어도 HTML 파싱이 깨지지 않도록 이스케이프.
+    # Escape "</script>" (etc.) that may appear in a persona body (markdown) so it
+    # does not break HTML parsing.
     payload = payload.replace("</", "<\\/")
     replacement = "/*__PERSONA_DATA__*/" + payload + "/*__END__*/"
     return MARKER_RE.sub(lambda _m: replacement, template_text, count=1)
 
 def main():
-    parser = argparse.ArgumentParser(description="persona-maker 시각화 HTML을 조립한다.")
+    parser = argparse.ArgumentParser(description="Assemble the persona-maker visualization HTML.")
     parser.add_argument("--personas-dir", default="personas")
     parser.add_argument(
         "--template",
@@ -147,7 +149,7 @@ def main():
     output_path = pathlib.Path(args.output) if args.output else personas_dir / "index.html"
 
     if not template_path.is_file():
-        print(f"템플릿 파일을 찾을 수 없습니다: {template_path}", file=sys.stderr)
+        print(f"template file not found: {template_path}", file=sys.stderr)
         sys.exit(1)
 
     template_text = template_path.read_text(encoding="utf-8")

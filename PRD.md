@@ -1,132 +1,162 @@
 # persona-maker PRD
 
-> **AI 에이전트에게:** 이 문서는 구현 지침입니다. 불명확한 부분은 추측하지 말고
-> 사용자에게 질문하세요. 구현 중 결정이 바뀌면 이 문서를 갱신해 source of truth로
-> 유지하세요. `(가정)` 표시 항목은 사용자가 확인하지 않은 내용이니, 의존하기
-> 전에 사용자에게 확인하세요.
+> **To AI agents:** This document is your implementation instruction. Where it is
+> unclear, do not guess — ask the user. When a decision changes during
+> implementation, update this document so it remains the source of truth (living
+> document). Items marked `(assumption)` were not confirmed by the user — verify
+> them before relying on them.
 >
-> 상세 설계는 `docs/superpowers/specs/2026-07-09-persona-maker-design.md`,
-> 태스크 단위 구현 절차는 `docs/superpowers/plans/2026-07-09-persona-maker.md`를 따르세요.
+> Detailed design: `docs/superpowers/specs/2026-07-09-persona-maker-design.md`.
+> Task-level implementation plan: `docs/superpowers/plans/2026-07-09-persona-maker.md`.
 
-## 1. 개요
+## 1. Overview
 
-디자이너·개발자·기획자는 제품 결정을 내릴 때 자신의 취향과 편견에 기대기 쉽고, 이는
-재작업과 사용자 이탈로 이어진다. persona-maker는 리서치 모범사례에 따라 페르소나
-카드·저니맵을 생성하고 "이 결정을 각 페르소나는 어떻게 받아들일까?"를 상시 질의할 수
-있게 하여, **철저히 사용자의 시각에서 의사결정하는 기준점**을 제공하는 Claude Code
-플러그인(+ Codex 스킬)이다. AI 합성 페르소나의 알려진 함정(positivity bias, 정체성
-평면화)에 대한 방어로 **신뢰도 3등급 체계**(assumption/partial/validated)를 내장하는
-것이 차별점이다.
+Designers, developers, and PMs tend to lean on their own taste and bias when
+making product decisions, which leads to rework and user churn. persona-maker
+generates persona cards and journey maps following research best practices and
+lets you continually ask "how would each persona receive this decision?", giving
+a **decision anchor grounded strictly in the user's perspective**. It is a Claude
+Code plugin (+ Codex adapter). Its differentiator is a built-in **3-tier
+confidence system** (assumption/partial/validated) that defends against the known
+pitfalls of AI-synthesized personas (positivity bias, identity flattening).
 
-## 2. 대상 사용자 & JTBD
+## 2. Target Users & JTBD
 
-- **누가:** 초기 스타트업의 디자이너·개발자·기획자 (1인 창업자 포함).
-- **어떤 상황에서:** 제품 개발 착수 전 또는 기능 의사결정 순간에, 정식 UX 리서치
-  조직 없이 아이디어 메모나 소수의 인터뷰 노트만 가진 상황.
-- **무엇을 이루려고:** 주관적 편견 대신 사용자 관점의 근거로 결정하고, 그 근거의
-  신뢰도(가정인지 검증인지)를 투명하게 알고 싶다.
+- **Who:** designers, developers, and PMs at early-stage startups (including solo
+  founders).
+- **Situation:** before starting product development, or at a feature-decision
+  moment, with no formal UX research team — holding only an idea memo or a few
+  interview notes.
+- **Job to be done:** decide from user-perspective evidence instead of subjective
+  bias, and know transparently how strong that evidence is (assumption vs.
+  validated).
 
-## 3. 핵심 기능 (스코프)
+## 3. Core Features (Scope)
 
-1. **`/persona-maker:init`** — 사용자 프로젝트에 `personas/` 구조와
-   `config.json`(모델·인원수·언어)을 생성한다. 이미 있으면 덮어쓰지 않고 현재 설정을 보여준다.
-2. **`/persona-maker:research`** — 아이디어 서술 또는 인터뷰 노트를 받아
-   `research/`에 저장하고, 니즈·행동·pain point 후보를 증거 태그와 함께 정리한
-   `research/insights.md`를 만든다. 입력 소스가 신뢰도 등급 상한을 결정한다.
-3. **`/persona-maker:generate`** — 인사이트 요약을 기반으로 페르소나 카드(기본 5명
-   = primary 1 + secondary 3 + anti-persona 1)와 저니맵(anti 제외)을 생성한다.
-   페르소나 1명당 저가 모델 서브에이전트 1개를 병렬 디스패치한다(Claude: haiku 기본,
-   Codex: gpt-5-mini 기본, config로 변경). `--update` 모드는 신규 인터뷰를 반영해
-   기존 카드의 등급·속성만 갱신한다(전체 재생성 금지).
-4. **`/persona-maker:visualize`** — 산출물 마크다운을 파싱해 의존성 0의 자기완결
-   `index.html`(Canvas 2D particle, 4개 씬: Constellation / Needs Landscape /
-   Journey Emotions / Decision Log)을 생성하고 로컬 서버로 연다. 신뢰도 등급이 시각
-   언어(흐릿한 점선 vs 선명한 입자)로 표현된다.
-5. **`/persona-maker:consult`** — 의사결정 질문에 대해 각 페르소나의
-   수용/중립/거부 반응과 근거를 생성하고, 합의점·충돌점·신뢰도 고지를 담아
-   `consultations/`에 누적한다. 결과는 시각화 Decision Log 씬에 반영된다.
+1. **`/persona-maker:init`** — creates the `personas/` structure and `config.json`
+   (model, count, language) in the user's project. Never overwrites an existing
+   config; shows current settings instead.
+2. **`/persona-maker:research`** — takes an idea description or interview notes,
+   stores them under `research/`, and produces `research/insights.md` with needs,
+   behaviors, and pain-point candidates plus evidence tags. The input source
+   determines the confidence ceiling.
+3. **`/persona-maker:generate`** — generates persona cards (default 5 = primary 1
+   + secondary 3 + anti 1) and journey maps (excluding anti) from the insights.
+   Dispatches one low-cost subagent per persona in parallel (Claude: `haiku`;
+   Codex: `gpt-5-mini`; changeable via config). `--update` mode reflects new
+   interviews by updating only the grades/attributes of existing cards.
+4. **`/persona-maker:visualize`** — parses the artifact markdown into a
+   zero-dependency, self-contained `index.html` (Canvas 2D particles, 4 scenes:
+   Constellation / Needs Landscape / Journey Emotions / Decision Log) and opens it
+   with a local server. Confidence grade is expressed as visual language (dashed
+   faint vs. solid bright particles).
+5. **`/persona-maker:consult`** — for a decision question, generates each persona's
+   accept/neutral/reject reaction and rationale, and records agreements, conflicts,
+   and a confidence disclosure under `consultations/`. Results feed the Decision
+   Log scene.
 
-## 4. Non-Goals (하지 않는 것)
+## 4. Non-Goals
 
-- 이번 버전에서 클라우드 호스팅·팀 공유·실시간 협업 기능은 구현하지 않는다 (로컬 파일 + 로컬호스트만).
-- 이번 버전에서 실사용자 인터뷰 모집·녹취·전사 자동화는 구현하지 않는다 (노트는 사용자가 직접 입력).
-- 이번 버전에서 정량 서베이 데이터의 통계적 클러스터링(k-means 등)은 구현하지 않는다.
-- 이번 버전에서 React/Vite 등 빌드 도구 기반 웹앱은 만들지 않는다 (단일 HTML 원칙) `[변경 금지]`.
-- 이번 버전에서 페르소나 프로필 이미지 생성은 하지 않는다. (가정)
-- 이번 버전에서 한국어·영어 외 언어의 산출물 품질 보증은 하지 않는다. (가정)
+- No cloud hosting, team sharing, or real-time collaboration this version (local
+  files + localhost only).
+- No automated recruiting/recording/transcription of real user interviews (the
+  user enters notes directly).
+- No statistical clustering (k-means, etc.) of quantitative survey data this
+  version.
+- No build-tool-based web app (React/Vite, etc.) — single-HTML principle `[DO NOT CHANGE]`.
+- No persona profile-image generation. (assumption)
+- No output-quality guarantee for languages other than the user's chosen
+  `config.language`. (assumption)
 
-## 5. 기술 제약 & 기존 결정
+## 5. Technical Constraints & Prior Decisions
 
-- 공유 코어(`core/`) + 플랫폼 어댑터(`claude-plugin/`, `codex-skill/`) 구조 — 방법론
-  수정이 양쪽에 동시 반영되도록 `[변경 금지]`.
-- 시각화는 자기완결 단일 HTML, 외부 CDN·폰트·패키지 참조 금지 `[변경 금지]`.
-- `build.py`는 Python 3 표준 라이브러리만 사용 (pytest는 개발 전용) `[변경 금지]`.
-- frontmatter는 build.py가 파싱 가능한 YAML 부분집합(스칼라·인라인 리스트·인라인
-  딕셔너리·정수)만 사용 — 생성 에이전트 지시문에 명시.
-- 페르소나 생성 모델: Claude 어댑터 haiku 기본, Codex 어댑터 gpt-5-mini 기본,
-  `personas/config.json`에서 언제든 변경 가능 `[변경 금지]`.
-- 오케스트레이션(인사이트 요약·상담 종합)은 메인 세션 모델, 대량 생성은 저가 모델 — 비용 분업 원칙.
-- 다루는 데이터: 페르소나 카드(id, 이름, role, archetype, confidence, sources,
-  demographics, goals, frustrations, behaviors, tech_savviness, quote, 서사, 반대할
-  결정들), 저니맵(persona_id, 5단계, 감정 점수 -2~+2, 터치포인트, pain point),
-  상담 기록(date, topic, 페르소나별 reactions), 설정(model, persona_count, language).
-- 개인정보: 인터뷰 노트는 사용자 로컬에만 저장되며 외부 전송 없음. 참가자는 별칭으로만 기록. (가정)
+- Shared core (`core/`) + platform adapters (`skills/`+`agents/`, `codex-skill/`)
+  so a methodology change reflects in both — `[DO NOT CHANGE]`.
+- The visualization is a self-contained single HTML; no external CDN/font/package
+  references — `[DO NOT CHANGE]`.
+- `build.py` uses the Python standard library only (pytest is dev-only) — `[DO NOT CHANGE]`.
+- Frontmatter uses only the YAML subset the build.py parser handles (scalars,
+  inline lists, inline dicts, integers) — stated in the generator instructions.
+- Persona generation model: Claude adapter defaults `haiku`, Codex adapter
+  defaults `gpt-5-mini`, changeable anytime in `personas/config.json` — `[DO NOT CHANGE]`.
+- Orchestration (insight summary, consultation synthesis) runs on the main-session
+  model; only bulk generation goes to the low-cost model — the cost division-of-labor.
+- Data handled: persona cards (id, name, role, archetype, confidence, sources,
+  demographics, goals, frustrations, behaviors, tech_savviness, quote, narrative,
+  push-back decisions), journey maps (persona_id, 5 stages, emotion scores -2..+2,
+  touchpoints, pain points), consultation records (date, topic, per-persona
+  reactions), config (model, persona_count, language).
+- Privacy: interview notes are stored only on the user's machine, never
+  transmitted externally. Participants are recorded by alias only. (assumption)
 
-## 6. 페이즈별 요구사항
+## 6. Phased Requirements
 
-### Phase 1: 공유 코어 + 시각화
+### Phase 1: Shared core + visualization
 
-**목표:** 방법론·템플릿·빌더·시각화가 완성되어 fixture 데이터만으로 particle 시각화를 열어볼 수 있다.
+**Goal:** methodology, templates, builder, and visualization are complete, so you
+can open the particle visualization from fixture data alone.
 
-**요구사항:**
-1. `core/methodology/` 문서 4종 작성 (persona-framework, journey-mapping, confidence-levels, interview-analysis) — 다양성 규칙(secondary 간 최소 2개 차별화 축), positivity bias 방지 지시, 등급 승격·강등 규칙 포함.
-2. `core/templates/` 3종 작성 (persona-card, journey-map, consultation) — frontmatter 스키마와 본문 골격 포함.
-3. `core/visualizer/build.py`: frontmatter 파서(YAML 부분집합) → 산출물 수집·검증(깨진 파일은 경고 후 건너뜀, 필수 필드 누락 시 기본값+경고) → `/*__PERSONA_DATA__*/` 마커 JSON 주입 → CLI(`--personas-dir`, `--template`, `--output`).
-4. `core/visualizer/template.html`: 탭 4개·카드 패널·파티클 베이스 + Constellation(등급별 시각 언어, 클릭 시 카드), Needs Landscape(공유 pain point 클러스터), Journey Emotions(감정 곡선 흐름 + 최저점 마커), Decision Log(찬반 분산) 씬. 데이터 없는 씬은 안내 문구 표시.
-5. pytest 테스트: 파서·수집·HTML 조립 (fixture: 정상 카드 2, 필드 누락 카드 1, 깨진 카드 1, 저니맵 1, 상담 1).
+**Requirements:**
+1. `core/methodology/` (persona-framework, journey-mapping, confidence-levels,
+   interview-analysis) — diversity rules, positivity-bias prevention, grade
+   promotion/demotion.
+2. `core/templates/` (persona-card, journey-map, consultation) — frontmatter
+   schema + body skeletons.
+3. `core/visualizer/build.py`: frontmatter parser (YAML subset) → artifact
+   collection/validation (skip broken files with warnings, default missing
+   fields) → JSON injection at the `/*__PERSONA_DATA__*/` marker → CLI.
+4. `core/visualizer/template.html`: tabs, card panel, particle base + the 4
+   scenes; data-less scenes show guidance text.
+5. pytest tests for parser/collection/HTML assembly (fixtures: 2 valid cards, 1
+   missing-field card, 1 broken card, 1 journey, 1 consultation).
 
-**수용 기준:**
-- [ ] `python3 -m pytest tests/ -v` 전체 통과.
-- [ ] `python3 core/visualizer/build.py --personas-dir tests/fixtures/personas --output /tmp/index.html` 실행 시 exit code 0, 깨진 카드 경고가 stderr에 출력된다.
-- [ ] 생성된 index.html을 브라우저에서 열면 4개 탭이 모두 전환되고 콘솔 에러가 0건이다.
-- [ ] assumption 등급 페르소나는 점선·저투명도로, validated는 실선·고투명도로 렌더링된다.
-- [ ] index.html이 외부 URL을 하나도 참조하지 않는다 (`grep -c "https://" /tmp/index.html` 결과에 리소스 로드용 URL 0건).
+**Acceptance criteria:**
+- [ ] `python -m pytest tests/ -v` passes fully.
+- [ ] `python3 core/visualizer/build.py --personas-dir tests/fixtures/personas --output /tmp/index.html` exits 0, with a broken-card warning on stderr.
+- [ ] Opening the built index.html switches all 4 tabs with zero console errors.
+- [ ] assumption personas render dashed/low-opacity; validated render solid/high-opacity.
+- [ ] index.html references zero external URLs.
 
-### Phase 2: Claude Code 플러그인 (Phase 1의 코어 필요)
+### Phase 2: Claude Code plugin (needs Phase 1 core)
 
-**목표:** Claude Code에서 5개 커맨드로 init→research→generate→visualize→consult 전체 워크플로우가 동작한다.
+**Goal:** the full init→research→generate→visualize→consult workflow runs in
+Claude Code via 5 commands.
 
-**요구사항:**
-1. `claude-plugin/.claude-plugin/plugin.json` 매니페스트.
-2. 스킬 5종 (init/research/generate/visualize/consult) — research·generate·visualize·consult는 시작 시 config.json 부재 시 init 안내 후 중단.
-3. `agents/persona-generator.md` (model: haiku, 도구 Read·Write 한정) — 슬롯당 1개 병렬 디스패치, 출력 frontmatter 검증 실패 시 해당 슬롯만 1회 재시도.
-4. `generate --update`: 기존 카드 유지하며 등급·속성만 갱신, 변경 카드만 재작성.
-5. consult 결과의 신뢰도 고지: assumption 등급 카드가 근거에 포함되면 명시.
+**Requirements:**
+1. `.claude-plugin/plugin.json` manifest (+ marketplace.json) and `commands/`.
+2. Five skills; research/generate/visualize/consult stop with an init prompt when
+   config.json is absent.
+3. `agents/persona-generator.md` (model haiku, tools Read/Write) — one parallel
+   dispatch per slot, one re-dispatch on frontmatter-validation failure.
+4. `generate --update`: keep existing cards, update only grades/attributes,
+   rewrite only changed cards.
+5. consult confidence disclosure: state when assumption-grade cards are in the basis.
 
-**수용 기준:**
-- [ ] 빈 디렉토리에서 init 실행 시 `personas/{research,cards,journeys,consultations}`와 config.json이 생성된다.
-- [ ] 아이디어 1문단만으로 research→generate 실행 시 카드 5장이 생성되고 전부 `confidence: assumption`이다.
-- [ ] anti-persona의 저니맵 파일이 존재하지 않는다.
-- [ ] 인터뷰 노트 3건 추가 후 `generate --update` 실행 시 최소 1개 카드의 confidence가 상향되고 sources에 인터뷰 파일이 인용된다.
-- [ ] visualize 실행 시 `http://localhost:<port>/index.html`이 열리고, 포트 충돌 시 8766~8775를 순차 시도한다.
-- [ ] consult 실행 시 `consultations/`에 날짜-주제 파일이 생성되고 페르소나 전원의 accept/neutral/reject가 기록된다.
+**Acceptance criteria:**
+- [ ] init in an empty dir creates `personas/{research,cards,journeys,consultations}` and config.json.
+- [ ] research→generate from an idea paragraph produces 5 cards, all `confidence: assumption`.
+- [ ] the anti-persona has no journey file.
+- [ ] after adding 3 interviews, `generate --update` promotes at least one card's confidence and cites the interviews in sources.
+- [ ] visualize opens `http://localhost:<port>/index.html`, trying 8766–8775 on port conflict.
+- [ ] consult creates a dated-topic file with every persona's accept/neutral/reject recorded.
 
-### Phase 3: Codex 어댑터 + 문서화 (Phase 2의 스킬 흐름 필요)
+### Phase 3: Codex adapter + docs (needs Phase 2 skill flow)
 
-**목표:** 동일 워크플로우가 Codex에서 gpt-5-mini 기본값으로 동작하고, README로 설치·사용이 안내된다.
+**Goal:** the same workflow runs in Codex with a `gpt-5-mini` default, and the
+README explains install and usage.
 
-**요구사항:**
-1. `codex-skill/SKILL.md` — 모드 인자(init|research|generate|visualize|consult)로 5개 흐름 통합, config 기본 model이 gpt-5-mini.
-2. `README.md` — 설치, 워크플로우, config 옵션표, 신뢰도 등급 설명.
-3. E2E 워크스루 2종(아이디어만 / 인터뷰 3건) 수행 및 결과를 플랜 Task 14 기준으로 검증.
+**Requirements:**
+1. `codex-skill/SKILL.md` — 5 modes in one file, config default model gpt-5-mini.
+2. `README.md` — install, workflow, config options, confidence grades.
+3. Two E2E walkthroughs (idea-only / 3-interview) verified against the plan's Task 14.
 
-**수용 기준:**
-- [ ] codex-skill/SKILL.md에 5개 모드 분기와 gpt-5-mini 기본값이 모두 명시되어 있다.
-- [ ] README의 명령 예시를 그대로 따라 하면 Phase 2 수용 기준의 워크플로우가 재현된다.
-- [ ] `python3 -m pytest tests/ -v` 전체 통과 (회귀 없음).
+**Acceptance criteria:**
+- [ ] codex-skill/SKILL.md states all 5 mode branches and the gpt-5-mini default.
+- [ ] following the README examples reproduces the Phase 2 workflow.
+- [ ] `python -m pytest tests/ -v` still passes (no regression).
 
-## 7. 성공 지표
+## 7. Success Metrics
 
-- 아이디어 입력부터 시각화 확인까지(init→visualize) 사용자 개입 제외 15분 이내에 완료된다. (가정)
-- 페르소나 5명 생성 시 대량 텍스트 생성이 전부 저가 모델(haiku/gpt-5-mini)에서 실행된다 — 메인 세션 모델의 생성 호출 0건.
-- 모든 페르소나 카드가 신뢰도 등급과 (validated의 경우) 출처 인용을 갖는다 — build.py 경고 0건.
+- From idea input to visualization (init→visualize), completion within 15 minutes excluding user input. (assumption)
+- When generating 5 personas, all bulk text generation runs on the low-cost model (haiku/gpt-5-mini) — zero generation calls on the main-session model.
+- Every persona card carries a confidence grade and (for validated) source citations — zero build.py warnings.

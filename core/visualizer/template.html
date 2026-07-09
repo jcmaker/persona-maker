@@ -126,9 +126,9 @@
     <button type="button" data-scene="decisions">Decision Log</button>
   </nav>
   <div id="confidence-legend">
-    <span class="item">⚪ assumption (가정 기반)</span>
-    <span class="item">🟡 partial (부분 검증)</span>
-    <span class="item">🟢 validated (검증됨)</span>
+    <span class="item">⚪ assumption (unvalidated)</span>
+    <span class="item">🟡 partial (partly validated)</span>
+    <span class="item">🟢 validated (evidence-backed)</span>
   </div>
 </header>
 <main>
@@ -141,15 +141,15 @@
   "use strict";
 
   // ---------------------------------------------------------------------
-  // 1. DATA: build.py가 아래 마커 사이의 JSON을 페르소나 산출물로 치환한다.
-  //    마커 문자열과 기본 빈 데이터 구조는 build.py와의 계약이므로 변경 금지.
+  // 1. DATA: build.py replaces the JSON between the markers below with real persona artifacts.
+  //    The marker strings and default empty structure are a contract with build.py — do not change.
   // ---------------------------------------------------------------------
   const DATA = /*__PERSONA_DATA__*/{"config":{},"personas":[],"journeys":[],"consultations":[],"warnings":[]}/*__END__*/;
 
   // ---------------------------------------------------------------------
-  // 2. Particle: 모든 씬이 공유하는 파티클 베이스 클래스.
-  //    스프링 물리로 target을 향해 부드럽게 이동한다.
-  //    dashed=true면 신뢰도 assumption 등급을 점선 외곽선으로 표현하는 데 쓴다.
+  // 2. Particle: base particle class shared by all scenes.
+  //    Moves smoothly toward its target via spring physics.
+  //    dashed=true renders an assumption-grade particle as a dashed outline.
   // ---------------------------------------------------------------------
   class Particle{
     constructor(opts){
@@ -199,8 +199,8 @@
 
   // ---------------------------------------------------------------------
   // 2b. Constellation scene — Task 7.
-  //     페르소나당 파티클 군집(golden-angle spiral)을 원형 레이아웃으로 배치하고,
-  //     신뢰도(confidence)와 role을 색/알파/점선으로 시각화한다.
+  //     Lays out one golden-angle-spiral particle cluster per persona in a circular layout,
+  //     visualizing confidence and role via color/alpha/dashes.
   // ---------------------------------------------------------------------
   function cssVar(name, fallback){
     const v = getComputedStyle(document.documentElement).getPropertyValue(name);
@@ -209,9 +209,9 @@
 
   function makeConstellationScene(){
     const GOLDEN_ANGLE = 2.39996322972865332; // 137.5deg in radians
-    const CLUSTER_SPREAD = 32; // golden-spiral 배치 반경(px)
-    const HIT_PADDING = 20; // 클릭 판정 여유(px)
-    const EMPTY_MESSAGE = "페르소나가 아직 없습니다 — /persona-maker:generate를 실행하세요";
+    const CLUSTER_SPREAD = 32; // golden-spiral layout radius (px)
+    const HIT_PADDING = 20; // click hit-test padding (px)
+    const EMPTY_MESSAGE = "No personas yet — run /persona-maker:generate";
 
     const CONFIDENCE_ALPHA = { assumption: 0.45, partial: 0.7, validated: 1.0 };
     const CONFIDENCE_DASHED = { assumption: true, partial: false, validated: false };
@@ -226,7 +226,7 @@
       return {
         primary: cssVar("--accent-strong", "#38bdf8"),
         secondary: cssVar("--text-dim", "#9aa4c0"),
-        anti: "#b06a6a" // 채도 낮은 경고색(붉은 회색) — 기존 CSS 변수 없음, 씬 내 상수로 정의
+        anti: "#b06a6a" // low-saturation warning color (reddish gray) — no existing CSS var, defined as a scene constant
       };
     }
 
@@ -251,7 +251,7 @@
         const color = colors[persona.role] || colors.secondary;
         const alpha = CONFIDENCE_ALPHA[confidence] != null ? CONFIDENCE_ALPHA[confidence] : CONFIDENCE_ALPHA.assumption;
         const dashed = !!CONFIDENCE_DASHED[confidence];
-        const count = 30 + Math.floor(Math.random() * 21); // 30~50개
+        const count = 30 + Math.floor(Math.random() * 21); // 30-50 particles
 
         const particles = [];
         for(let j = 0; j < count; j++){
@@ -353,7 +353,7 @@
           return;
         }
 
-        // 카드 패널이 사용자에 의해(close 버튼) 닫히면 흩어진 군집을 원위치로 복귀시킨다.
+        // If the user closes the card panel (close button), revert the scattered cluster.
         if(activeCluster){
           const panel = document.getElementById("card-panel");
           if(panel && panel.hidden){
@@ -410,11 +410,11 @@
 
   // ---------------------------------------------------------------------
   // 2c. Needs Landscape scene — Task 8.
-  //     전체 페르소나의 goals+frustrations를 유사 텍스트 기준으로 병합해
-  //     노드로 만들고, 공유 페르소나 수에 비례한 크기·궤도 파티클로 표현한다.
+  //     Merge all personas' goals+frustrations by text similarity into
+  //     nodes sized by shared-persona count, with orbiting particles.
   // ---------------------------------------------------------------------
   function makeNeedsScene(){
-    const EMPTY_MESSAGE = "페르소나가 아직 없습니다 — /persona-maker:generate를 실행하세요";
+    const EMPTY_MESSAGE = "No personas yet — run /persona-maker:generate";
     const FRUSTRATION_COLOR = "#c1555f";
     const NODE_MIN_GAP = 14;
 
@@ -427,8 +427,8 @@
     }
 
     function warningsOverlayHeight(){
-      // #warnings는 main 안에 position:absolute; bottom:0으로 캔버스 위에 겹쳐 그려진다.
-      // 노드/라벨이 그 뒤에 가려지지 않도록 실제 렌더 높이만큼 아래쪽 여백을 확보한다.
+      // #warnings is position:absolute; bottom:0 inside main, overlaying the canvas.
+      // Reserve bottom margin equal to its rendered height so nodes/labels aren't hidden.
       const el = document.getElementById("warnings");
       if(!el || el.hidden) return 0;
       return el.getBoundingClientRect().height;
@@ -683,7 +683,7 @@
         });
         if(hovered) drawTooltip(_ctx, hovered, mouseX, mouseY);
       },
-      onClick(x, y){ /* 호버 툴팁으로 충분 — 클릭 동작 없음 */ },
+      onClick(x, y){ /* hover tooltip is enough — no click action */ },
       exit(){
         if(_canvas) _canvas.removeEventListener("mousemove", onMouseMove);
         _ctx = null; _canvas = null; nodes = [];
@@ -693,11 +693,11 @@
 
   // ---------------------------------------------------------------------
   // 2d. Journey Emotions scene — Task 8.
-  //     페르소나별 5단계 감정 곡선을 부드럽게 그리고, 곡선을 따라 흐르는
-  //     잔상 파티클로 여정의 흐름을 표현한다. 상단 칩으로 곡선을 토글한다.
+  //     Draws each persona's 5-stage emotion curve smoothly, with trailing
+  //     particles flowing along it. Top chips toggle each curve.
   // ---------------------------------------------------------------------
   function makeJourneysScene(){
-    const EMPTY_MESSAGE = "저니맵이 아직 없습니다 — /persona-maker:generate를 실행하세요";
+    const EMPTY_MESSAGE = "No journey maps yet — run /persona-maker:generate";
     const STAGE_LABELS = ["awareness", "consideration", "decision", "usage", "advocacy"];
     const CONFIDENCE_ALPHA = { assumption: 0.45, partial: 0.7, validated: 1.0 };
     const PARTICLES_PER_CURVE = 3;
@@ -738,8 +738,8 @@
     let improvementMarker = null;
 
     function warningsOverlayHeight(){
-      // #warnings는 main 안에 position:absolute; bottom:0으로 캔버스 위에 겹쳐 그려진다.
-      // 축/라벨이 그 뒤에 가려지지 않도록 실제 렌더 높이만큼 아래쪽 여백을 확보한다.
+      // #warnings is position:absolute; bottom:0 inside main, overlaying the canvas.
+      // Reserve bottom margin equal to its rendered height so axis/labels aren't hidden.
       const el = document.getElementById("warnings");
       if(!el || el.hidden) return 0;
       return el.getBoundingClientRect().height;
@@ -937,7 +937,7 @@
       ctx.textAlign = "center";
       ctx.textBaseline = "bottom";
       ctx.font = "700 11.5px -apple-system, sans-serif";
-      ctx.fillText("▼ 개선 기회", marker.x, marker.y - 10);
+      ctx.fillText("▼ opportunity", marker.x, marker.y - 10);
       ctx.restore();
     }
 
@@ -998,11 +998,11 @@
 
   // ---------------------------------------------------------------------
   // 2e. Decision Log scene — Task 8.
-  //     상담 목록에서 하나를 선택하면 참여 페르소나들의 반응(accept/neutral/reject)
-  //     에 따라 파티클 군집이 갈라져 이동한다.
+  //     Selecting a consultation splits participating personas' clusters by reaction
+  //     (accept/neutral/reject) into moving groups.
   // ---------------------------------------------------------------------
   function makeDecisionsScene(){
-    const EMPTY_MESSAGE = "상담 기록이 아직 없습니다 — /persona-maker:consult를 실행하세요";
+    const EMPTY_MESSAGE = "No consultations yet — run /persona-maker:consult";
     const PARTICLES_PER_PERSONA = 12;
 
     function zoneColors(){
@@ -1159,8 +1159,8 @@
     }
 
     function warningsOverlayHeight(){
-      // #warnings는 main 안에 position:absolute; bottom:0으로 캔버스 위에 겹쳐 그려진다.
-      // 신뢰도 고지 문구가 그 뒤에 가려지지 않도록 실제 렌더 높이만큼 아래쪽 여백을 확보한다.
+      // #warnings is position:absolute; bottom:0 inside main, overlaying the canvas.
+      // Reserve bottom margin equal to its rendered height so the disclosure text isn't hidden.
       const el = document.getElementById("warnings");
       if(!el || el.hidden) return 0;
       return el.getBoundingClientRect().height;
@@ -1188,7 +1188,7 @@
       const built = buildClusters(c, personaLookup(_personas), w, h, _listWidth);
       clusters = built.clusters;
       disclaimer = built.assumptionCount > 0
-        ? "⚠ 이 결론은 assumption 등급 페르소나 " + built.assumptionCount + "명을 근거에 포함합니다"
+        ? "⚠ This view includes " + built.assumptionCount + " assumption-grade persona(s) as basis"
         : "";
     }
 
@@ -1241,19 +1241,19 @@
   }
 
   // ---------------------------------------------------------------------
-  // 3. Scene registry — 4개 탭이 구현해야 하는 공통 인터페이스.
+  // 3. Scene registry — the common interface each of the 4 tabs implements.
   //
-  //    각 씬 객체는 다음 메서드를 구현한다:
-  //      enter(ctx, data)  — 탭이 활성화될 때 1회 호출. ctx: CanvasRenderingContext2D,
-  //                          data: DATA 전체 객체. 씬 내부 상태(파티클 배열 등)를 이 시점에 구성한다.
-  //      tick(dt)          — requestAnimationFrame마다 호출. dt: 이전 프레임과의 경과 시간(ms).
-  //                          여기서 물리 업데이트 + ctx에 draw까지 수행한다(캔버스 clear는 루프가 담당).
-  //      onClick(x, y)     — 캔버스 클릭 시 호출. x, y는 CSS 픽셀 기준 캔버스 로컬 좌표
-  //                          (devicePixelRatio 보정은 루프가 이미 처리해서 넘긴다).
-  //      exit()            — 탭이 비활성화될 때 1회 호출. 타이머 정리 등 필요시 사용.
+  //    Each scene object implements:
+  //      enter(ctx, data)  — called once when the tab activates. ctx: CanvasRenderingContext2D,
+  //                          data: the whole DATA object. Build scene state (particle arrays, etc.) here.
+  //      tick(dt)          — called every requestAnimationFrame. dt: ms since the previous frame.
+  //                          Do physics updates + draw to ctx here (the loop handles canvas clear).
+  //      onClick(x, y)     — called on canvas click. x, y are canvas-local CSS-pixel coords
+  //                          (the loop already applies devicePixelRatio correction).
+  //      exit()            — called once when the tab deactivates. Use for cleanup (timers, listeners).
   //
-  //    Task 7(Constellation)·Task 8(Needs/Journeys/Decisions)이 아래 placeholder를
-  //    동일 인터페이스를 유지한 채 실제 구현으로 교체한다.
+  //    The real scenes replace the placeholders below while keeping the
+  //    same interface.
   // ---------------------------------------------------------------------
   function makePlaceholderScene(label){
     let _ctx = null;
@@ -1271,7 +1271,7 @@
         _ctx.font = "600 16px -apple-system, sans-serif";
         _ctx.fillText(label, w / 2, h / 2 - 12);
         _ctx.font = "13px -apple-system, sans-serif";
-        _ctx.fillText("구현 예정", w / 2, h / 2 + 12);
+        _ctx.fillText("coming soon", w / 2, h / 2 + 12);
         _ctx.restore();
       },
       onClick(x, y){ /* placeholder: no-op */ },
@@ -1301,7 +1301,7 @@
   }
 
   // ---------------------------------------------------------------------
-  // 4. Canvas 설정 + resize + devicePixelRatio 스케일링
+  // 4. Canvas setup + resize + devicePixelRatio scaling
   // ---------------------------------------------------------------------
   const canvas = document.getElementById("stage");
   const ctx = canvas.getContext("2d");
@@ -1326,7 +1326,7 @@
   });
 
   // ---------------------------------------------------------------------
-  // 5. requestAnimationFrame 루프
+  // 5. requestAnimationFrame loop
   // ---------------------------------------------------------------------
   let lastTime = null;
   function loop(now){
@@ -1342,22 +1342,22 @@
   requestAnimationFrame(loop);
 
   // ---------------------------------------------------------------------
-  // 6. 탭 전환 배선
+  // 6. Tab-switch wiring
   // ---------------------------------------------------------------------
   document.querySelectorAll("#tabs button").forEach(function(btn){
     btn.addEventListener("click", function(){ switchScene(btn.dataset.scene); });
   });
 
   // ---------------------------------------------------------------------
-  // 7. 카드 패널 렌더러
+  // 7. Card panel renderer
   // ---------------------------------------------------------------------
   const GRADE_LABEL = {
-    assumption: "⚪ assumption (가정 기반)",
-    partial: "🟡 partial (부분 검증)",
-    validated: "🟢 validated (검증됨)"
+    assumption: "⚪ assumption (unvalidated)",
+    partial: "🟡 partial (partly validated)",
+    validated: "🟢 validated (evidence-backed)"
   };
   const ASSUMPTION_WARNING =
-    "⚪ 가정 기반 proto-persona — 실사용자 검증 전에는 중요한 의사결정 근거로 사용하지 마세요.";
+    "⚪ Assumption-based proto-persona — do not use as a basis for important decisions before validating with real users.";
 
   function escapeHtml(s){
     return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
@@ -1366,7 +1366,7 @@
   }
 
   function renderList(items){
-    if(!items || !items.length) return "<ul><li>(없음)</li></ul>";
+    if(!items || !items.length) return "<ul><li>(none)</li></ul>";
     return "<ul>" + items.map(function(i){ return "<li>" + escapeHtml(i) + "</li>"; }).join("") + "</ul>";
   }
 
@@ -1381,7 +1381,7 @@
       : "";
 
     panel.innerHTML =
-      '<button type="button" class="close-btn" aria-label="닫기">&times;</button>' +
+      '<button type="button" class="close-btn" aria-label="close">&times;</button>' +
       banner +
       "<h2>" + escapeHtml(persona.name) + "</h2>" +
       '<p class="archetype">' + escapeHtml(persona.archetype) + "</p>" +
@@ -1389,7 +1389,7 @@
       (persona.quote ? '<p class="quote">“' + escapeHtml(persona.quote) + '”</p>' : "") +
       "<section><h3>Role</h3><p>" + escapeHtml(persona.role) + "</p></section>" +
       '<section><h3>Demographics</h3><p class="demographics">' +
-        escapeHtml(demo.age != null ? demo.age + "세" : "") + " " +
+        escapeHtml(demo.age != null ? demo.age + " yrs" : "") + " " +
         escapeHtml(demo.occupation || "") + "<br>" +
         escapeHtml(demo.context || "") +
         "</p></section>" +
@@ -1406,14 +1406,14 @@
   }
 
   // ---------------------------------------------------------------------
-  // 8. 초기 렌더: 제목, 경고 배너, 첫 씬
+  // 8. Initial render: title, warnings banner, first scene
   // ---------------------------------------------------------------------
   document.getElementById("project-title").textContent =
     (DATA.config && DATA.config.project_name) || "persona-maker";
 
   const warningsEl = document.getElementById("warnings");
   if(DATA.warnings && DATA.warnings.length){
-    warningsEl.innerHTML = "<strong>경고</strong><ul>" +
+    warningsEl.innerHTML = "<strong>Warnings</strong><ul>" +
       DATA.warnings.map(function(w){ return "<li>" + escapeHtml(w) + "</li>"; }).join("") +
       "</ul>";
     warningsEl.hidden = false;
@@ -1423,7 +1423,7 @@
 
   switchScene("constellation");
 
-  // 디버깅/후속 태스크(Task 7·8)를 위해 전역에 노출.
+  // Exposed globally for debugging.
   window.__personaMaker = { DATA: DATA, Particle: Particle, sceneRegistry: sceneRegistry, renderCard: renderCard };
 })();
 </script>

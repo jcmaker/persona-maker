@@ -1,7 +1,8 @@
-# 작성 중 - 아직 정리되지 않은 메모
+# Draft — unorganized notes
 
-이 파일은 frontmatter 블록 없이 작성되다가 중단된 카드다. 파이프라인이 이런 파일을 만나도
-크래시하지 않고 경고만 남긴 채 건너뛰어야 한다.
+This file was started as a card without a frontmatter block and then abandoned.
+The pipeline must not crash on such a file — it should skip it with only a
+warning.
 
-- 임시 메모: 30대 초반, 프리랜서 개발자였던 것 같음
-- TODO: 나중에 정식 카드로 재작성
+- Temp note: early 30s, possibly a freelance developer
+- TODO: rewrite as a proper card later

@@ -1,5 +1,5 @@
 ---
-description: 페르소나 산출물을 particle 시각화로 빌드하고 로컬 서버로 엽니다
+description: Build the particle visualization and open it in a local server
 ---
 
 Use the visualize skill (${CLAUDE_PLUGIN_ROOT}/skills/visualize/SKILL.md) to build personas/index.html and serve it locally.

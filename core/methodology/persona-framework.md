@@ -1,112 +1,124 @@
-# persona-framework.md — 페르소나 카드 생성 규칙
+# persona-framework.md — Persona Card Generation Rules
 
-> **대상 독자:** 이 문서는 persona-generator 서브에이전트(haiku/gpt-5-mini)가 페르소나 카드
-> 1장을 생성할 때 그대로 따라야 하는 지시문이다. 에세이가 아니라 체크리스트로 읽어라.
-> 규칙을 어기면 카드는 미완성으로 간주하고 다시 쓴다.
+> **Audience:** This document is the instruction set that the persona-generator
+> subagent (haiku/gpt-5-mini) follows verbatim when writing a single persona
+> card. Read it as a checklist, not an essay. A card that breaks these rules is
+> considered incomplete and must be rewritten.
 
-## 왜 이런 규칙이 있는가
+## Why these rules exist
 
-LLM이 합성한 페르소나는 실제 사용자보다 더 성공적이고 호의적인 인물로 왜곡되는
-**positivity bias**와, 여러 페르소나가 서로 구별되지 않고 비슷해지는
-**정체성 평면화(identity flattening)** 문제가 학술적으로 보고되어 있다. 아래 규칙은
-이 두 결함을 구조적으로 막기 위한 장치다. "그럴듯하게 좋은 인물"을 쓰는 것이 목표가
-아니라, "이 결정에 반대할 수도 있는 구체적인 사람"을 쓰는 것이 목표다.
+LLM-synthesized personas are known to suffer from **positivity bias** (skewed
+toward more successful, agreeable people than reality) and **identity
+flattening** (multiple personas collapsing into near-identical profiles). Both
+failures are documented in the research literature. The rules below are
+structural safeguards against them. The goal is not to write a "plausibly nice
+person" but a "specific person who might actively oppose this decision."
 
 ---
 
-## 1. 카드 필수 요소
+## 1. Required card elements
 
-카드 1장에는 아래 필드가 전부 있어야 한다. 하나라도 비어 있으면 미완성이다.
+Every card must contain all of the following fields. If any is empty, the card
+is incomplete.
 
-| 필드 | 규칙 |
+| Field | Rule |
 |---|---|
-| `name` | 한국어 창작명. 실존 인물 이름 사용 금지. 카드마다 성·이름을 서로 다르게 짓는다. |
-| `archetype` | 짧은 역할 요약 문구(예: "바쁜 실무 디자이너"). 직함 나열이 아니라 태도·상황을 담는다. |
-| `goals` | 3~5개. 추상적 욕구가 아니라 **구체적 상황**으로 서술한다. |
-| `frustrations` | 3~5개. 동일 원칙. |
-| `behaviors` | 3~5개. 동일 원칙. |
-| `quote` | 1인칭 화법 한 문장. 페르소나가 직접 말하듯 쓴다. 마케팅 문구·슬로건 금지. |
-| `demographics` | `age`, `occupation`, `context` 세 키만 사용한다. 그 외 인구통계(성별·거주지·소득·학력·가족관계 등)는 넣지 않는다 — 과도한 인구통계는 스테레오타입을 강화하므로 금지. |
+| `name` | An invented name in the project's `language`. No real public figures. Give each card a distinct name. |
+| `archetype` | A short role summary (e.g., "Time-strapped solo designer"). Capture an attitude/situation, not a list of job titles. |
+| `goals` | 3–5 items. Write **concrete situations**, not abstract desires. |
+| `frustrations` | 3–5 items. Same principle. |
+| `behaviors` | 3–5 items. Same principle. |
+| `quote` | One first-person sentence, as if the persona is speaking. No marketing slogans. |
+| `demographics` | Use only the three keys `age`, `occupation`, `context`. Do not add other demographics (gender, location, income, education, family status, etc.) — excessive demographics reinforce stereotypes and are forbidden. |
 
-**구체적 상황 서술이란 무엇인가:**
-- 금지 예 (추상적): "효율성을 중시한다"
-- 허용 예 (구체적): "매주 월요일 스프린트 회의 직전에 결정 근거를 못 찾아 슬랙으로 동료에게 급하게 묻는다"
+**What "concrete situation" means:**
+- Forbidden (abstract): "Values efficiency."
+- Allowed (concrete): "Every Monday just before the sprint meeting, can't find the rationale for a decision and pings a colleague on Slack in a hurry."
 
-goals·frustrations·behaviors의 모든 항목은 "언제·어떤 상황에서·무엇을" 수준으로
-구체화한다. 형용사 하나짜리 요약(빠른, 편한, 신뢰할 수 있는)만 쓰지 않는다.
+Every item in goals/frustrations/behaviors must reach the "when / in what
+situation / doing what" level of detail. Do not use single-adjective summaries
+(fast, easy, reliable) alone.
 
 ---
 
-## 2. 다양성 규칙 (5명 기본 구성)
+## 2. Diversity rules (default 5-persona set)
 
-기본 인원수는 5명이며 구성은 다음으로 고정한다.
+The default headcount is 5, with a fixed composition:
 
 - `primary` × 1
 - `secondary` × 3
 - `anti` × 1
 
-### secondary 3명 간 분화 조건
+### Differentiation among the 3 secondaries
 
-secondary 3명은 서로 구별돼야 한다. 아래 3개 축 중 **최소 2개는 서로 달라야 한다**
-(같은 값이면 규칙 위반):
+The 3 secondaries must be distinct from one another. At least **2 of the
+following 3 axes must differ** between them (identical values are a rule
+violation):
 
-1. **`tech_savviness`** (1-5 정수) — 서로 최소 2점 이상 차이가 나야 한다.
-2. **사용 동기** — 제품을 쓰는 이유가 서로 달라야 한다(`goals`에서 드러나야 함).
-3. **이용 맥락** — `demographics.context`(언제·어디서·어떤 상황에서 쓰는지)가 서로
-   달라야 한다.
+1. **`tech_savviness`** (integer 1–5) — must differ by at least 2 points.
+2. **Usage motivation** — the reason they use the product must differ (should
+   surface in `goals`).
+3. **Usage context** — `demographics.context` (when/where/in what situation
+   they use it) must differ.
 
-슬롯 설계 단계(메인 세션)가 이 차별화 축을 미리 배정하며, 서브에이전트는 배정된
-축을 그대로 반영해 카드를 쓴다. 임의로 축을 바꾸지 않는다.
+The slot-design step (main session) assigns these differentiation axes in
+advance; the subagent reflects the assigned axis as-is. Do not change the axis
+on your own.
 
-### 추가 다양성 점검
+### Additional diversity checks
 
-- 5명 전원의 `demographics.age`가 서로 ±5세 이내(즉 전부 같은 연령대)이면 안 된다.
-- 5명 전원의 `demographics.occupation`이 같은 직군이면 안 된다.
-
----
-
-## 3. positivity bias 방지 지시
-
-합성 페르소나를 "성공적이고 호의적인 인물"로 균질화하지 마라.
-
-- 모든 페르소나가 제품을 좋아하거나, 문제를 스스로 잘 해결하거나, 팀의 결정에
-  동의하는 인물이면 안 된다.
-- 카드 본문에 `## 이 페르소나가 반대할 결정들` 섹션을 **반드시** 포함하고, **최소
-  3개** 항목을 적는다. 각 항목은 "이 페르소나라면 반대했을 제품/기능 결정 + 반대하는
-  구체적 이유"로 쓴다.
-- `frustrations` 중 최소 1개는 제품·팀 자체를 향한 불만(가설 기능에 대한 회의, 불신,
-  무관심, 실망 등)이어야 한다. 전부 "경쟁사가 별로다" 류의 외부 불만만 쓰면 안 된다.
-- 완벽한 성공담·매끄러운 사용자 여정만 쓰지 않는다. `behaviors`에 회피·포기·우회
-  행동을 최소 1개 포함한다(예: "복잡한 설정 화면은 끝까지 안 보고 기본값으로 둔다").
+- Not all 5 personas' `demographics.age` may fall within ±5 years of each other
+  (i.e., all the same age bracket).
+- Not all 5 personas' `demographics.occupation` may be the same job family.
 
 ---
 
-## 4. anti-persona 정의
+## 3. Positivity-bias prevention
 
-`role: anti`는 제품을 쓰지 않거나, 쓰다가 떠날 사용자다. 핵심 정보는 인물 배경이
-아니라 **"왜 안 쓰는가"**다.
+Do not homogenize synthetic personas into "successful, agreeable people."
 
-- `goals`는 "이 제품이 해결하지 못하는, 이 사람이 실제로 원하는 것"으로 쓴다.
-- `frustrations`는 전부 "이 제품/카테고리에 대한 근본적 거부 이유"여야 한다. 사소한
-  UX 불편이 아니라 구조적 이유(신뢰 부족, 이미 쓰는 대체 수단, 가치관 불일치,
-  예산·조직 제약 등)를 쓴다.
-- `## 이 페르소나가 반대할 결정들` 섹션에는 "이 제품의 핵심 전제 자체"에 대한 반대를
-  최소 1개 포함한다.
-- **anti-persona는 저니맵을 생성하지 않는다** (`core/methodology/journey-mapping.md`
-  참조). 제품을 쓰지 않는 사용자에게 사용 여정은 존재하지 않는다.
+- Not every persona may love the product, solve their own problems well, or
+  agree with the team's decisions.
+- The card body **must** include a `## Decisions this persona would push back on`
+  section with **at least 3** items. Each item is "a product/feature decision
+  this persona would have opposed + the concrete reason."
+- At least 1 of the `frustrations` must be directed at the product/team itself
+  (skepticism, distrust, indifference, or disappointment about a hypothetical
+  feature). Not all frustrations may be external ("competitors are bad").
+- Do not write only smooth success stories. Include at least 1 avoidance /
+  abandonment / workaround behavior in `behaviors` (e.g., "Leaves the complex
+  settings screen at defaults without reading to the end").
 
 ---
 
-## 5. 생성 전 최종 점검 체크리스트
+## 4. Anti-persona definition
 
-카드를 저장하기 전에 아래를 전부 확인한다.
+`role: anti` is a user who does not use the product, or who will leave. The key
+information is not their background but **why they don't use it**.
 
-- [ ] `goals`/`frustrations`/`behaviors` 각 3~5개, 전부 구체적 상황 서술인가
-- [ ] `demographics`가 `age`/`occupation`/`context` 세 키만 갖는가
-- [ ] `quote`가 1인칭인가
-- [ ] `## 이 페르소나가 반대할 결정들` 섹션에 3개 이상 있는가
-- [ ] `frustrations` 중 최소 1개가 제품/팀 자체를 향한 불만인가
-- [ ] `behaviors` 중 최소 1개가 회피·포기·우회 행동인가
-- [ ] (anti가 아니면) 슬롯에 배정된 차별화 축(§2)을 실제로 반영했는가
-- [ ] (anti면) `frustrations` 전부가 구조적 거부 이유인가, 저니맵 파일을 만들지
-      않았는가
+- Write `goals` as "what this person actually wants that this product does not
+  solve."
+- All `frustrations` must be "fundamental reasons for rejecting this
+  product/category." Not minor UX friction but structural reasons (lack of
+  trust, an existing alternative, value mismatch, budget/organizational
+  constraints, etc.).
+- The `## Decisions this persona would push back on` section must include at
+  least 1 objection to "the core premise of the product itself."
+- **Do not generate a journey map for an anti-persona** (see
+  `core/methodology/journey-mapping.md`). A user who does not use the product
+  has no usage journey.
+
+---
+
+## 5. Pre-save final checklist
+
+Verify all of the following before saving a card.
+
+- [ ] Are `goals`/`frustrations`/`behaviors` each 3–5 items, all concrete situations?
+- [ ] Does `demographics` have only the `age`/`occupation`/`context` keys?
+- [ ] Is `quote` first-person?
+- [ ] Does `## Decisions this persona would push back on` have 3 or more items?
+- [ ] Is at least 1 `frustrations` item directed at the product/team itself?
+- [ ] Is at least 1 `behaviors` item an avoidance/abandonment/workaround behavior?
+- [ ] (If not anti) Did you actually reflect the assigned differentiation axis (§2)?
+- [ ] (If anti) Are all `frustrations` structural rejection reasons, and did you avoid creating a journey-map file?

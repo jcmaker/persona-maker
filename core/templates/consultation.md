@@ -1,46 +1,52 @@
 <!--
-  consultation.md — 페르소나 협의(consult) 기록 템플릿
+  consultation.md — template for a persona consultation (consult) record
 
-  메인 세션이 페르소나 카드들을 대상으로 특정 의사결정을 시뮬레이션해 협의 결과를
-  기록할 때 그대로 복사해 채우는 뼈대다. 값은 예시이며 실제 내용으로 전부 교체한다.
+  The skeleton the main session copies and fills in when it simulates a specific
+  decision against the persona cards and records the consultation result. The
+  values are examples — replace everything with real content.
 
-  frontmatter YAML 부분집합 (core/visualizer/build.py 파서가 지원하는 전부): 스칼라,
-  "따옴표 문자열", { k: v } 인라인 딕셔너리. 블록 스타일(들여쓰기 중첩) 금지.
+  Frontmatter YAML subset (everything the core/visualizer/build.py parser
+  supports): scalars, "quoted strings", { k: v } inline dicts. Block style
+  (indented nesting) is forbidden.
 
-  주의: 아래 예시의 `# ...` 는 이 템플릿 파일에서만 쓰는 설명용 인라인 주석이다.
-  파서는 줄 전체가 `#`으로 시작할 때만 건너뛴다 — 값 뒤에 붙은 인라인 주석은 값
-  문자열에 그대로 포함되어 파싱이 깨진다. 실제 협의 기록을 저장할 때는 `# ...` 부분을
-  반드시 삭제한다.
+  Note: the `# ...` below are explanatory inline comments used only in this
+  template. The parser skips a line only when the whole line starts with `#` —
+  an inline comment after a value is folded into the value string and breaks
+  parsing. When saving a real consultation, always delete the `# ...` part.
+
+  Also: write all filled-in content in the project's `language` (config.json).
 -->
 ---
 date: "2026-07-09"
-topic: "의사결정 주제 한 줄"
-reactions: { p01: accept, p02: neutral, p03: reject }   # accept | neutral | reject — 등장하는 모든 페르소나 id를 포함
+topic: "One-line decision topic"
+reactions: { p01: accept, p02: neutral, p03: reject }   # accept | neutral | reject — include every persona id that participated
 ---
 
-## 질문
+## Question
 
-<!-- 협의 대상 의사결정을 1~3문장으로 구체적으로 서술한다. 두 개 이상의 선택지가
-     있다면 선택지를 명시한다. -->
+<!-- Describe the decision under consultation in 1-3 concrete sentences. If there
+     are two or more options, state them explicitly. -->
 
-## 페르소나별 반응
+## Per-persona reactions
 
-<!-- 협의에 참여한 페르소나마다 소제목 하나씩. 수용/중립/거부를 명시하고, 이유는
-     반드시 해당 카드의 goals/frustrations/behaviors 또는 "이 페르소나가 반대할
-     결정들"에서 인용한다 — 카드 근거 없는 추측을 새로 지어내지 않는다.
-     role: anti 페르소나가 참여했다면 그 반응은 제품 핵심 전제에 대한 입장을
-     반영해야 한다(persona-framework.md §4). -->
+<!-- One subheading per participating persona. State accept/neutral/reject, and
+     the reason MUST be quoted from that card's goals/frustrations/behaviors or
+     "Decisions this persona would push back on" — do not invent a reason absent
+     from the card. If a role: anti persona participated, its reaction must
+     reflect its stance on the product's core premise (persona-framework.md §4). -->
 
-- **{이름} ({id}, {role}) — 수용/중립/거부**: "{카드 근거를 인용한 이유}"
+- **{name} ({id}, {role}) — accept/neutral/reject**: "{reason quoting card evidence}"
 
-## 합의점과 충돌점
+## Agreements and conflicts
 
-<!-- 페르소나 간 의견이 겹치는 지점(합의점)과 정면으로 부딪히는 지점(충돌점)을 구분해
-     적는다. 전원이 같은 반응이더라도 이유까지 같은지 확인하고, 다르면 충돌점에 남긴다. -->
+<!-- Separate where personas agree (agreements) from where they directly clash
+     (conflicts). Even if everyone reacts the same, check whether their reasons
+     are the same too; if they differ, log it under conflicts. -->
 
-## 신뢰도 고지
+## Confidence disclosure
 
-<!-- confidence-levels.md 기준. 근거로 인용된 페르소나 중 assumption 등급 카드가
-     하나라도 포함되면 "이 결론은 assumption 등급 페르소나 N명 기반" 형식으로 명시하고,
-     실사용자 검증 전에는 중요한 의사결정 근거로 쓰지 말라는 경고를 덧붙인다. partial/
-     validated만으로 구성됐다면 그 사실도 명시해 신뢰 수준을 분명히 한다. -->
+<!-- Per confidence-levels.md. If any cited persona is assumption-grade, state
+     "This conclusion is based on N assumption-grade personas" and add the
+     warning not to use it as a basis for important decisions before validating
+     with real users. If it consists only of partial/validated personas, state
+     that too, to make the confidence level clear. -->
