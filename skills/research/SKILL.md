@@ -1,107 +1,111 @@
 ---
 name: research
-description: 제품 아이디어 설명이나 인터뷰 노트를 니즈/불만/행동 인사이트로 정리할 때 — 사용자가 아이디어를 설명하거나 인터뷰 원문을 붙여넣었을 때 실행
+description: Organize a product idea or interview notes into evidence-tagged research insights — run when the user describes an idea or pastes raw interview notes.
 ---
 
 # research
 
-사용자가 입력한 제품 아이디어 서술 또는 인터뷰 노트를 `personas/research/`에
-저장하고, `core/methodology/interview-analysis.md`의 절차에 따라
-`personas/research/insights.md`를 생성·갱신한다.
+Store the user's product-idea description or interview notes under
+`personas/research/`, and generate/update `personas/research/insights.md`
+following the procedure in `core/methodology/interview-analysis.md`.
 
-## 지시사항
+## Language
 
-### 0. 전제 확인
+Converse with the user in their language. Write all artifacts
+(`insights.md`, stored notes) in `config.language` from `personas/config.json`.
 
-`personas/config.json`이 없으면 다음을 안내하고 즉시 중단하라:
+## Instructions
 
-> 먼저 `/persona-maker:init`을 실행하세요.
+### 0. Prerequisite check
 
-### 1. 입력 판별 및 저장
+If `personas/config.json` is missing, tell the user and stop immediately:
 
-사용자 입력이 다음 중 무엇인지 판별하라. 애매하면 추측하지 말고 사용자에게
-물어라.
+> Run `/persona-maker:init` first.
 
-- **(a) 제품 아이디어 서술** — 아직 실사용자 인터뷰가 아닌, "이런 제품을
-  만들려 한다"는 설명.
-  → `personas/research/idea-brief.md`로 저장한다. 이미 파일이 존재하면
-  덮어쓰기 전에 내용을 갱신할지 사용자에게 확인하라.
+### 1. Classify input and store
 
-- **(b) 인터뷰 노트** — 실제 참가자와의 인터뷰 원문(대화록, 메모 등).
-  → `personas/research/interview-NN-<참가자별칭>.md`로 저장한다.
-  - `NN`은 `personas/research/` 내 기존 `interview-*.md` 파일들의 다음
-    2자리 순번이다(기존 파일이 없으면 `01`부터).
-  - 참가자 실명은 저장하지 마라(개인정보 보호). 별칭이 주어지지 않았으면
-    사용자에게 물어라.
-  - 원문은 요약·정제 없이 **그대로** 저장한다. 가공은 이 단계가 아니라
-    2단계의 인사이트 추출에서만 수행한다.
+Determine which of the following the user's input is. If ambiguous, don't guess
+— ask the user.
 
-### 2. 인사이트 추출
+- **(a) Product-idea description** — an explanation of "I want to build this,"
+  not yet a real user interview.
+  → Store at `personas/research/idea-brief.md`. If the file already exists,
+  confirm with the user before updating it.
 
-`${CLAUDE_PLUGIN_ROOT}/core/methodology/interview-analysis.md`를 읽고,
-그 문서에 정의된 절차를 그대로 따라 `personas/research/insights.md`를
-생성 또는 갱신하라. 아래는 핵심 규칙 요약이며, 두 문서가 어긋나면
-`interview-analysis.md` 원문이 우선한다.
+- **(b) Interview notes** — a real transcript/memo from a participant.
+  → Store at `personas/research/interview-NN-<participant-alias>.md`.
+  - `NN` is the next 2-digit number after existing `interview-*.md` files (start
+    at `01` if none exist).
+  - Do not store the participant's real name (privacy protection). If no alias
+    was given, ask the user.
+  - Store the raw text **as-is**, without summarizing or refining — processing
+    happens only in step 2's insight extraction.
 
-- 니즈·불만·행동에 해당하는 증거 문장을 원문 발화에서 그대로(또는 최소
-  편집으로) 추출한다. 원문에 없는 내용을 만들어내지 않는다.
-- 추출한 각 증거 문장에 `[I-NN]` 태그를 붙인다(`NN`은 해당 인터뷰 파일의
-  순번과 동일).
-- **"증거"**(참가자가 명시적으로 말한 것)와 **"추론"**(여러 증거를 종합한
-  분석자의 판단)을 라벨로 반드시 구분하라. 두 라벨을 섞어 쓰지 마라. 추론
-  항목에는 근거가 된 `[I-NN]` 목록을 병기한다.
-- **아이디어만 있는 경우**(인터뷰 0건): 증거가 존재하지 않으므로
-  `insights.md`의 모든 항목은 "추론(아이디어 기반 가정)" 라벨을 붙인다.
-  파일 상단에 `available_confidence: assumption`을 명시한다.
-- **인터뷰가 있는 경우**: `personas/research/interview-*.md` 전체에서 서로
-  다른 참가자(별칭 기준) 수를 센다. **3명 미만이면** `insights.md` 상단에
-  다음 문구를 정확히 명시한다(의역·축약 금지):
+### 2. Insight extraction
 
-  > 표본 부족 — validated 등급 불가 (partial까지만 허용).
+Read `${CLAUDE_PLUGIN_ROOT}/core/methodology/interview-analysis.md` and follow
+its defined procedure to create or update `personas/research/insights.md`. Key
+rule summary (the original document wins if they diverge):
 
-  인터뷰 건수도 함께 기록한다(참가자 수와 인터뷰 파일 수는 다를 수 있다 —
-  동일 참가자를 여러 번 인터뷰했을 수 있으므로 둘 다 남긴다).
+- Extract evidence sentences verbatim (or with minimal edits) from the original
+  utterances. Do not fabricate content not in the transcript.
+- Attach an `[I-NN]` tag to each evidence sentence (`NN` = that interview file's
+  number).
+- Always distinguish **"evidence"** (explicitly stated) from **"inference"**
+  (synthesized judgment). Do not mix the labels. Attach the source `[I-NN]` list
+  to inference items.
+- **Idea only** (0 interviews): since no evidence exists, label every item in
+  `insights.md` "inference (idea-based assumption)." State
+  `available_confidence: assumption` at the top of the file.
+- **With interviews**: count the distinct participants (by alias) across all
+  `personas/research/interview-*.md`. If **fewer than 3**, state the following
+  verbatim at the top of `insights.md` (no paraphrasing/shortening):
 
-`insights.md` 권장 구조:
+  > Insufficient sample — validated grade not allowed (partial is the ceiling).
+
+  Also record the interview count (participant count and file count can differ —
+  the same participant may have been interviewed multiple times, so keep both).
+
+Recommended `insights.md` structure:
 
 ```markdown
-# 리서치 인사이트
+# Research insights
 <!-- available_confidence: assumption | partial | validated -->
-<!-- 참가자 수: N명, 인터뷰 M건 -->
-(표본 부족 경고 — 해당 시)
+<!-- participants: N, interviews: M -->
+(insufficient-sample warning — if applicable)
 
-## 니즈
-- [증거] "..." [I-01]
-- [추론] ... (근거: [I-01], [I-02])
+## Needs
+- [evidence] "..." [I-01]
+- [inference] ... (from: [I-01], [I-02])
 
-## 불만
-- [증거] "..." [I-02]
-- [추론] ...
+## Frustrations
+- [evidence] "..." [I-02]
+- [inference] ...
 
-## 행동
-- [증거] "..." [I-01]
-- [추론] ...
+## Behaviors
+- [evidence] "..." [I-01]
+- [inference] ...
 ```
 
-### 3. 직접 수행 원칙
+### 3. Direct-execution principle
 
-이 단계(입력 판별, 저장, 인사이트 추출)는 메인 세션 에이전트가 **직접**
-수행한다. 서브에이전트를 디스패치하지 마라 — 증거/추론 구분과 표본 부족
-판정은 오케스트레이션·판단 작업이며, 저비용 모델에 위임하는 대량 생성
-작업(`generate` 단계)과 분업이 다르다.
+This step (classify input, store, extract insights) is performed **directly** by
+the main session. Do not dispatch a subagent — evidence/inference distinction
+and sample-size judgment are orchestration/judgment work, a different division
+of labor from the bulk generation delegated in the `generate` step.
 
-### 4. 완료 보고
+### 4. Completion report
 
-작업을 마치면 다음을 요약해 보여줘라:
+When done, summarize:
 
-- 저장된 파일 경로(`idea-brief.md` 또는 `interview-NN-*.md`, `insights.md`)
-- 추출된 인사이트 개수(니즈/불만/행동별 증거·추론 건수)
-- 현재 참가자 수와 인터뷰 건수, 그리고 그에 따라 가능한 최대 신뢰도 등급
-  (`assumption`/`partial`/`validated` 중 상한)
+- Stored file paths (`idea-brief.md` or `interview-NN-*.md`, `insights.md`)
+- Number of extracted insights (evidence/inference counts by needs/frustrations/behaviors)
+- Current participant count and interview count, and the resulting maximum
+  possible confidence grade (the ceiling among `assumption`/`partial`/`validated`)
 
-마지막으로 다음 단계를 안내하라:
+Finally, point to the next step:
 
-- `personas/cards/`에 카드가 아직 없으면: "`/persona-maker:generate`로
-  페르소나를 생성하세요."
-- `personas/cards/`에 이미 카드가 있으면: "`/persona-maker:generate
-  --update`로 기존 페르소나를 갱신하세요."
+- If `personas/cards/` has no cards yet: "Run `/persona-maker:generate` to
+  generate personas."
+- If `personas/cards/` already has cards: "Run `/persona-maker:generate --update`
+  to update existing personas."

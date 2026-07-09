@@ -1,115 +1,126 @@
 ---
 name: generate
-description: personas/research/insights.md를 바탕으로 페르소나 카드와 저니맵을 일괄 생성한다. --update 플래그로 기존 페르소나를 새 인터뷰에 맞춰 갱신할 때도 사용
+description: Generate persona cards and journey maps from personas/research/insights.md. Also used with the --update flag to update existing personas against new interviews.
 ---
 
 # generate
 
-`personas/research/insights.md`를 바탕으로 페르소나 카드(+저니맵)를 생성한다.
-대량 텍스트 생성(카드·저니맵 본문 작성)은 `persona-generator` 서브에이전트에
-위임하고, 슬롯 설계·검증·등급 재평가 같은 판단 작업은 메인 세션이 직접 수행한다.
+Generate persona cards (+ journey maps) from `personas/research/insights.md`.
+Bulk text generation (writing card/journey bodies) is delegated to the
+`persona-generator` subagent; judgment work (slot design, validation, grade
+re-evaluation) is done directly by the main session.
 
-## 지시사항
+## Language
 
-### 0. 전제 확인
+Converse with the user in their language. Pass `config.language` to each
+subagent so all generated artifacts are written in that language.
 
-`personas/config.json`이 없으면 다음을 안내하고 즉시 중단하라:
+## Instructions
 
-> 먼저 `/persona-maker:init`을 실행하세요.
+### 0. Prerequisite check
 
-`personas/research/insights.md`가 없으면 다음을 안내하고 즉시 중단하라:
+If `personas/config.json` is missing, tell the user and stop:
 
-> 먼저 `/persona-maker:research`를 실행하세요.
+> Run `/persona-maker:init` first.
 
-### 1. config 읽기
+If `personas/research/insights.md` is missing, tell the user and stop:
 
-`personas/config.json`을 읽어 아래 값을 확인한다.
+> Run `/persona-maker:research` first.
 
-- `model` (기본값 `haiku`) — 이후 서브에이전트를 디스패치할 때 이 값을 그대로
-  `model` 파라미터로 사용한다.
-- `persona_count` (기본값 5)
+### 1. Read config
+
+Read `personas/config.json` for:
+
+- `model` (default `haiku`) — use this value as the `model` parameter when
+  dispatching subagents.
+- `persona_count` (default 5)
 - `language`
 
-### 2. 슬롯 설계 (메인 세션이 직접 수행)
+### 2. Slot design (done directly by the main session)
 
-이 단계는 판단 작업이므로 서브에이전트에 위임하지 않는다.
+This is judgment work, so it is not delegated to a subagent.
 
-1. `persona_count`에 맞춰 구성을 정한다: `primary` 1명, `anti` 1명, 나머지는
-   전부 `secondary`.
-2. `${CLAUDE_PLUGIN_ROOT}/core/methodology/persona-framework.md` §2
-   다양성 규칙을 읽고, secondary 슬롯끼리 서로 구별되도록 슬롯별 차별화 축을
-   미리 배정한다 — `tech_savviness`(최소 2점 차), 사용 동기, 이용 맥락
-   (`demographics.context`) 중 최소 2개 축이 슬롯마다 달라야 한다.
-3. `personas/research/insights.md` 상단의 `available_confidence`(및 표본 부족
-   경고 유무)와 `${CLAUDE_PLUGIN_ROOT}/core/methodology/confidence-levels.md`
-   규칙에 따라 각 슬롯의 `confidence` 등급을 결정한다. 인터뷰가 0건이면 전원
-   `assumption`이다. 참가자가 3명 미만이면 어떤 슬롯도 `partial`을 넘지
-   않는다.
-4. 슬롯마다 `id`(예: `p01`, `p02`, …), `role`, 차별화 축, `confidence`를
-   정리해 다음 단계에서 서브에이전트에 그대로 전달할 수 있도록 준비한다.
+1. Compose the set per `persona_count`: 1 `primary`, 1 `anti`, the rest
+   `secondary`.
+2. Read `${CLAUDE_PLUGIN_ROOT}/core/methodology/persona-framework.md` §2
+   (diversity rules) and pre-assign a differentiation axis per slot so the
+   secondary slots are distinct — at least 2 of `tech_savviness` (≥2-point gap),
+   usage motivation, and usage context (`demographics.context`) must differ per
+   slot.
+3. Decide each slot's `confidence` grade from `insights.md`'s top
+   `available_confidence` (and whether the insufficient-sample warning is
+   present) plus
+   `${CLAUDE_PLUGIN_ROOT}/core/methodology/confidence-levels.md`. If 0
+   interviews, everyone is `assumption`. If fewer than 3 participants, no slot
+   exceeds `partial`.
+4. For each slot, prepare `id` (`p01`, `p02`, …), `role`, differentiation axis,
+   and `confidence` to pass to the subagent in the next step.
 
-### 3. 병렬 디스패치
+### 3. Parallel dispatch
 
-슬롯마다 `persona-generator` 서브에이전트 1개를 **병렬로** 디스패치한다(모델은
-1단계에서 읽은 `config.json`의 `model` 값을 사용). 각 프롬프트에 아래 6종을
-명시한다.
+Dispatch one `persona-generator` subagent **in parallel** per slot (using the
+`model` value read from `config.json` in step 1). Include these 6 inputs in each
+prompt.
 
-1. `personas/research/insights.md` 경로
-2. 해당 슬롯 정의(`id`, `role`, 차별화 축, `confidence`)
-3. 템플릿 경로 — `${CLAUDE_PLUGIN_ROOT}/core/templates/persona-card.md`,
-   (anti가 아니면) `${CLAUDE_PLUGIN_ROOT}/core/templates/journey-map.md`
-4. 방법론 문서 경로 — `${CLAUDE_PLUGIN_ROOT}/core/methodology/persona-framework.md`,
+1. Path to `personas/research/insights.md`
+2. The slot definition (`id`, `role`, differentiation axis, `confidence`)
+3. Template paths — `${CLAUDE_PLUGIN_ROOT}/core/templates/persona-card.md`, and
+   (if not anti) `${CLAUDE_PLUGIN_ROOT}/core/templates/journey-map.md`
+4. Methodology paths —
+   `${CLAUDE_PLUGIN_ROOT}/core/methodology/persona-framework.md`,
    `${CLAUDE_PLUGIN_ROOT}/core/methodology/journey-mapping.md`,
    `${CLAUDE_PLUGIN_ROOT}/core/methodology/confidence-levels.md`
-5. config(`language` 등)
-6. 출력 파일 경로 — `personas/cards/persona-NN-<slug>.md`, (anti가 아니면)
-   `personas/journeys/journey-pNN.md` (`NN`은 슬롯 `id`의 번호, `<slug>`는
-   페르소나 이름의 로마자 슬러그)
+5. config (`language`, etc.)
+6. Output file paths — `personas/cards/persona-NN-<slug>.md`, and (if not anti)
+   `personas/journeys/journey-pNN.md` (`NN` = the slot `id` number, `<slug>` = a
+   romanized slug of the persona name)
 
-### 4. 검증
+### 4. Validation
 
-서브에이전트가 완료하면 각 산출물을 확인한다.
+When a subagent finishes, check each artifact.
 
-- 카드 frontmatter에 필수 필드(`id`/`name`/`role`/`archetype`/`confidence`/
-  `sources`/`demographics`/`goals`/`frustrations`/`behaviors`/
-  `tech_savviness`/`quote`)가 전부 있는가
-- 저니맵 frontmatter에 `persona_id`/`stages`(정확히 5개)/`emotions`(정수
-  5개)/`touchpoints`/`pain_points`가 있는가
-- 두 파일 모두 YAML 부분집합(스칼라, `"따옴표 문자열"`, 정수, 인라인 리스트/
-  딕셔너리)만 쓰고 블록 스타일이 섞이지 않았는가
-- 저니맵 `emotions`가 전부 양수는 아닌가(최소 1개는 0 이하)
-- `role: anti` 슬롯에 저니맵 파일이 생성되지 않았는가
+- Does the card frontmatter contain all required fields (`id`/`name`/`role`/
+  `archetype`/`confidence`/`sources`/`demographics`/`goals`/`frustrations`/
+  `behaviors`/`tech_savviness`/`quote`)?
+- Does the journey frontmatter have `persona_id`/`stages` (exactly 5)/`emotions`
+  (5 integers)/`touchpoints`/`pain_points`?
+- Do both files use only the YAML subset (scalars, `"quoted strings"`, integers,
+  inline lists/dicts) with no block style mixed in?
+- Are the journey `emotions` not all-positive (at least 1 is 0 or below)?
+- Was no journey file created for a `role: anti` slot?
 
-실패한 슬롯이 있으면 무엇이 문제인지 구체적으로 명시해 **해당 슬롯만 1회**
-재디스패치한다. 재실패하면 그 슬롯은 자동 수정하지 말고 사용자에게 보고한다.
+If a slot fails, state exactly what is wrong and **re-dispatch that slot once**.
+If it fails again, do not auto-fix — report it to the user.
 
-### 5. `--update` 모드
+### 5. `--update` mode
 
-사용자가 `/persona-maker:generate --update`를 호출했거나, `--update` 지정 없이
-호출했더라도 `personas/cards/`에 이미 카드가 있으면 전체 재생성을 하지 않는다.
-대신 아래를 메인 세션이 **직접** 수행한다(등급 판정은 판단 작업이므로
-서브에이전트에 위임하지 않는다).
+If the user invoked `/persona-maker:generate --update`, or invoked without
+`--update` but cards already exist in `personas/cards/`, do not regenerate
+everything. Instead the main session does the following **directly** (grade
+judgment is judgment work, not delegated to a subagent).
 
-1. 기존 카드 전체와 `personas/research/insights.md`의 신규 인사이트를
-   대조한다.
-2. `${CLAUDE_PLUGIN_ROOT}/core/methodology/confidence-levels.md` §2(승격
-   규칙)·§3(강등 규칙)을 적용한다.
-   - 신규 `[증거]` 항목이 어떤 페르소나 속성과 실제로 대응하는지 확인하고,
-     대응이 확인된 것만 `sources`에 추가한다(억지 연결 금지).
-   - 연결된 인터뷰 수에 따라 등급을 재평가한다(0건 `assumption`, 1~2건
-     `partial`, 3건+ `validated`). 참가자 3명 미만 상한을 넘기지 않는다.
-   - 새 인터뷰가 기존 가정과 모순되면 해당 속성을 수정하고 본문에 "이전
-     가정: …" 형태로 무엇이 왜 바뀌었는지 남긴 뒤 등급을 강등한다.
-3. **변경이 필요한 카드만** 수정하고, 나머지 카드·저니맵은 건드리지 않는다.
+1. Compare all existing cards against the new insights in
+   `personas/research/insights.md`.
+2. Apply `${CLAUDE_PLUGIN_ROOT}/core/methodology/confidence-levels.md` §2
+   (promotion) and §3 (demotion).
+   - Confirm which persona attribute each new `[evidence]` item actually
+     corresponds to, and add only the confirmed ones to `sources` (no forced
+     links).
+   - Re-evaluate the grade by the number of linked interviews (0 = `assumption`,
+     1–2 = `partial`, 3+ = `validated`). Keep the fewer-than-3-participants cap.
+   - If a new interview contradicts an existing assumption, revise that
+     attribute and leave a "Previous assumption: …" note in the body, then
+     demote.
+3. Modify **only the cards that need changes**; leave the rest untouched.
 
-### 6. 완료 보고
+### 6. Completion report
 
-작업을 마치면 다음을 요약해 보여준다.
+When done, summarize:
 
-- 생성/갱신된 파일 목록
-- 등급 분포 (`assumption N` / `partial N` / `validated N`)
-- 이번 실행에서 발생한 승격·강등 내역(어떤 슬롯이 왜 바뀌었는지)
+- List of generated/updated files
+- Grade distribution (`assumption N` / `partial N` / `validated N`)
+- Any promotions/demotions in this run (which slot changed and why)
 
-마지막으로 다음 단계를 안내한다:
+Finally, point to the next step:
 
-> `/persona-maker:visualize`로 시각화를 생성하세요.
+> Run `/persona-maker:visualize` to build the visualization.

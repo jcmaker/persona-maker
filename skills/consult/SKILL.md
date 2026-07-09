@@ -1,114 +1,121 @@
 ---
 name: consult
-description: 기능·디자인 의사결정을 페르소나 관점으로 미리 검토할 때 — "이 결정 사용자들이 어떻게 생각할까", "페르소나들한테 물어봐줘", "이 기능 반응이 어떨까" 등을 요청했을 때 실행
+description: Review a feature/design decision from the personas' perspective — run when the user asks "what would users think of this decision", "ask the personas", "how would this feature land", etc.
 ---
 
 # consult
 
-특정 기능·디자인 의사결정을 `personas/cards/`의 페르소나들에게 시뮬레이션으로
-"물어보고" accept/neutral/reject 반응과 그 근거를 협의 기록으로 남긴다. 페르소나별
-반응 판정(대량 판단 생성)은 서브에이전트에 위임하고, 질문 구체화·종합·신뢰도
-고지는 메인 세션이 직접 수행한다.
+"Ask" the personas in `personas/cards/` about a specific feature/design decision
+via simulation, recording accept/neutral/reject reactions and their rationale as
+a consultation record. Per-persona reaction judgment (bulk judgment generation)
+is delegated to a subagent; question refinement, synthesis, and confidence
+disclosure are done directly by the main session.
 
-## 지시사항
+## Language
 
-### 0. 전제 확인
+Converse with the user in their language. Write the consultation record in
+`config.language` from `personas/config.json`.
 
-`personas/config.json`이 없으면 다음을 안내하고 즉시 중단하라:
+## Instructions
 
-> 먼저 `/persona-maker:init`을 실행하세요.
+### 0. Prerequisite check
 
-`personas/cards/`에 카드가 하나도 없으면 다음을 안내하고 즉시 중단하라:
+If `personas/config.json` is missing, tell the user and stop:
 
-> 먼저 `/persona-maker:generate`를 실행하세요.
+> Run `/persona-maker:init` first.
 
-### 1. 질문 접수
+If there are no cards in `personas/cards/`, tell the user and stop:
 
-사용자가 제시한 의사결정 질문을 구체화한다. 질문이 애매하면(선택지가 무엇인지
-불명확하거나 "이거 어떨까요?" 수준으로 추상적이면) 추측하지 말고 사용자에게 되물어
-선택지를 명확히 하라. 예:
+> Run `/persona-maker:generate` first.
 
-> "온보딩에 회원가입을 강제할까요, 게스트 모드를 둘까요?"
+### 1. Receive the question
 
-질문이 이미 구체적이면(선택지가 명확한 이분법 또는 단일 결정 서술) 되묻지 않고
-바로 진행한다.
+Refine the decision question the user posed. If it is ambiguous (options unclear
+or abstract like "what do you think of this?"), don't guess — ask back to clarify
+the options. Example:
 
-### 2. 카드 로드
+> "Should we force sign-up during onboarding, or offer a guest mode?"
 
-`personas/cards/*.md` 전체를 **Read**로 읽는다. 요약하거나 일부만 골라 읽지
-않는다 — 협의는 카드에 있는 goals/frustrations/behaviors/"이 페르소나가 반대할
-결정들" 전체를 근거로 삼아야 한다.
+If the question is already concrete (a clear either/or or single-decision
+statement), proceed without asking back.
 
-### 3. 서브에이전트 디스패치
+### 2. Load cards
 
-`personas/config.json`의 `model`(기본값 `haiku`)로 서브에이전트 1개를
-디스패치한다. 프롬프트에 아래를 포함한다:
+Read all of `personas/cards/*.md`. Do not summarize or read only a subset — the
+consultation must draw on the full goals/frustrations/behaviors/"Decisions this
+persona would push back on" of each card.
 
-- 1단계에서 구체화한 의사결정 질문(선택지 포함)
-- 2단계에서 읽은 카드 전체 내용(모든 페르소나, frontmatter + 본문)
-- 지시사항:
-  - 페르소나(`role: anti` 포함) 전원에 대해 개별적으로 `accept`/`neutral`/`reject`
-    중 하나를 판정하고, 1~3문장의 이유를 작성한다.
-  - **이유는 반드시 해당 카드의 `goals`/`frustrations`/`behaviors` 또는
-    "## 이 페르소나가 반대할 결정들" 섹션에서 실제로 인용해야 한다.** 카드에 없는
-    근거를 새로 지어내지 않는다 — 인용할 근거가 카드에 없으면 그 사실을 그대로
-    보고한다(억지로 이유를 만들지 않는다).
-  - `role: anti` 페르소나의 반응은 개별 기능 호불호가 아니라 **제품 핵심 전제에
-    대한 입장**을 반영해야 한다(예: "애초에 이 카테고리 제품 자체를 안 쓴다"는
-    맥락에서 이 결정을 본다).
-  - 출력 형식: 페르소나 `id`마다 `판정: accept|neutral|reject` + `이유: "..."`를
-    명확히 구분해 반환하도록 요청한다(메인 세션이 그대로 파싱해 쓸 수 있도록).
+### 3. Dispatch subagent
 
-### 4. 종합 (메인 세션 직접 수행)
+Dispatch one subagent using the `model` (default `haiku`) from
+`personas/config.json`. Include in the prompt:
 
-서브에이전트 결과를 받으면 이 단계는 메인 세션이 **직접** 수행한다(위임하지
-않는다):
+- The decision question refined in step 1 (with options)
+- The full card contents read in step 2 (all personas, frontmatter + body)
+- Instructions:
+  - For every persona (including `role: anti`), individually judge
+    `accept`/`neutral`/`reject` and write a 1–3 sentence reason.
+  - **The reason must actually be quoted from that card's
+    `goals`/`frustrations`/`behaviors` or "## Decisions this persona would push
+    back on."** Do not invent a reason absent from the card — if there is no
+    citable basis in the card, report that fact (do not force a reason).
+  - A `role: anti` persona's reaction must reflect its stance on the product's
+    **core premise**, not a like/dislike of the individual feature (e.g., it
+    views this decision through "I don't use this category of product at all").
+  - Output format: for each persona `id`, return `verdict: accept|neutral|reject`
+    + `reason: "..."` clearly separated (so the main session can parse it
+    directly).
 
-1. 페르소나 간 반응이 겹치는 지점(합의점)과 정면으로 부딪히는 지점(충돌점)을
-   구분해 정리한다. 전원이 같은 반응(예: 전부 accept)이더라도 이유까지 같은지
-   확인하고, 이유가 다르면 충돌점에 남긴다.
-2. 신뢰도 고지를 작성한다. `core/methodology/confidence-levels.md` 기준을
-   따른다:
-   - 근거로 인용된 페르소나 중 `assumption` 등급 카드가 하나라도 포함되면 다음
-     문구를 반드시 포함한다: "이 결론은 assumption 등급 페르소나 N명 기반 —
-     실사용자 검증 전에는 중요한 의사결정 근거로 사용하지 마세요." (N은 실제
-     인원 수로 치환)
-   - 인용된 페르소나가 `partial`/`validated` 등급뿐이면 그 사실을 명시해 신뢰
-     수준을 분명히 한다(예: "이 결론은 partial 이상 등급 페르소나 N명 기반입니다").
+### 4. Synthesis (done directly by the main session)
 
-### 5. 저장
+When the subagent's results arrive, the main session does this **directly** (not
+delegated):
 
-`${CLAUDE_PLUGIN_ROOT}/core/templates/consultation.md`의 구조를 그대로 따라
-협의 기록을 작성한다.
+1. Separate agreements (where reactions overlap) from conflicts (where they
+   directly clash). Even if everyone reacts the same, check whether their reasons
+   are the same too; if they differ, log it under conflicts.
+2. Write the confidence disclosure per
+   `${CLAUDE_PLUGIN_ROOT}/core/methodology/confidence-levels.md`:
+   - If any cited persona is `assumption`-grade, include exactly: "This
+     conclusion is based on N assumption-grade personas — do not use as a basis
+     for important decisions before validating with real users." (replace N with
+     the actual count)
+   - If the cited personas are only `partial`/`validated`, state that to make the
+     confidence level clear (e.g., "This conclusion is based on N personas graded
+     partial or higher").
 
-- 저장 경로: `personas/consultations/YYYY-MM-DD-<주제-slug>.md`
-  - `YYYY-MM-DD`는 오늘 날짜다. `date +%F` 명령으로 정확한 값을 확인해 사용한다
-    (시스템 컨텍스트의 날짜와 다를 수 있으므로 셸에서 직접 확인한다).
-  - `<주제-slug>`는 의사결정 질문을 요약한 소문자 kebab-case 로마자 슬러그다
-    (예: "회원가입 강제 여부" → `signup-required`). 슬러그가 애매하면 질문의
-    핵심 키워드로 직접 만든다.
-  - 같은 날짜·같은 주제로 저장된 파일이 이미 존재하면 파일명에 `-2` 접미사를
-    붙인다(`-2`도 있으면 `-3`으로, 이하 동일).
-- frontmatter:
-  - `date`: 오늘 날짜(`"YYYY-MM-DD"` 형식의 따옴표 문자열)
-  - `topic`: 1단계에서 구체화한 의사결정 질문 한 줄
-  - `reactions: { p01: accept, p02: neutral, ... }` — 협의에 **참여한 모든**
-    페르소나 id를 빠짐없이 포함한다. YAML 부분집합(스칼라, `"따옴표 문자열"`,
-    한 줄 인라인 딕셔너리)만 쓴다. 블록 스타일 중첩과 인라인 `# 주석`은 절대
-    쓰지 않는다 — 값에 그대로 포함되어 파싱이 깨진다.
-- 본문 섹션: "질문", "페르소나별 반응"(페르소나마다 소제목 하나, 카드 근거
-  인용 포함), "합의점과 충돌점", "신뢰도 고지"를 `consultation.md` 예시 형식
-  그대로 채운다.
+### 5. Save
 
-### 6. 완료 안내
+Follow the structure of
+`${CLAUDE_PLUGIN_ROOT}/core/templates/consultation.md` to write the record.
 
-작업을 마치면 다음을 요약해 보여준다:
+- Save path: `personas/consultations/YYYY-MM-DD-<topic-slug>.md`
+  - `YYYY-MM-DD` is today's date. Get the exact value with the `date +%F` command
+    (it may differ from the ambient date context, so check in the shell).
+  - `<topic-slug>` is a lowercase kebab-case romanized slug summarizing the
+    question (e.g., "force sign-up" → `signup-required`).
+  - If a file with the same date and topic already exists, append a `-2` suffix
+    (then `-3`, etc.).
+- Frontmatter:
+  - `date`: today's date (a `"YYYY-MM-DD"` quoted string)
+  - `topic`: the one-line decision question refined in step 1
+  - `reactions: { p01: accept, p02: neutral, ... }` — include **every**
+    participating persona id. Use only the YAML subset (scalars, `"quoted
+    strings"`, one-line inline dict). Never use block-style nesting or inline
+    `# comments` — they get folded into the value and break parsing.
+- Body sections: "Question", "Per-persona reactions" (one subheading per persona
+  with cited card evidence), "Agreements and conflicts", "Confidence
+  disclosure" — fill in following the `consultation.md` example format.
 
-- 반응 요약: `accept N명 / neutral N명 / reject N명`
-- 핵심 충돌점 1~2줄
-- 저장된 협의 기록 파일 경로
+### 6. Wrap-up
 
-마지막으로 다음을 안내한다:
+When done, summarize:
 
-> `/persona-maker:visualize`를 다시 실행하면 Decision Log 씬에 이번 협의
-> 결과가 반영됩니다.
+- Reaction summary: `accept N / neutral N / reject N`
+- The key conflict in 1–2 lines
+- Path to the saved consultation record
+
+Finally:
+
+> Re-run `/persona-maker:visualize` to reflect this consultation in the Decision
+> Log scene.
