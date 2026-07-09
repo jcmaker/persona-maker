@@ -1,0 +1,1430 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>persona-maker</title>
+<style>
+  :root{
+    --bg: #0b1020;
+    --bg-elevated: #131a30;
+    --text: #e8ecf8;
+    --text-dim: #9aa4c0;
+    --border: #26305090;
+    --accent: #7dd3fc;
+    --accent-strong: #38bdf8;
+    --warn-bg: #3a2a10;
+    --warn-border: #b98a2a;
+    --warn-text: #f5d9a0;
+    --tab-active-bg: #1c2440;
+    --grade-assumption: #9aa4c0;
+    --grade-partial: #f6d860;
+    --grade-validated: #6ee7a0;
+    --shadow: 0 8px 30px rgba(0,0,0,0.45);
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg: #f4f6fb;
+      --bg-elevated: #ffffff;
+      --text: #171b2e;
+      --text-dim: #565f7e;
+      --border: #d8deee;
+      --accent: #0369a1;
+      --accent-strong: #0284c7;
+      --warn-bg: #fff4e0;
+      --warn-border: #d99a2b;
+      --warn-text: #6b4a0a;
+      --tab-active-bg: #e6ecfb;
+      --grade-assumption: #7a839c;
+      --grade-partial: #a67c00;
+      --grade-validated: #157a45;
+      --shadow: 0 8px 24px rgba(20,25,50,0.12);
+    }
+  }
+  *{ box-sizing: border-box; }
+  html, body{
+    margin: 0; padding: 0; height: 100%;
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo",
+      "Malgun Gothic", Roboto, Helvetica, Arial, sans-serif;
+  }
+  body{ display: flex; flex-direction: column; overflow: hidden; }
+  header{
+    display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px;
+    padding: 10px 16px; border-bottom: 1px solid var(--border);
+    background: var(--bg-elevated); z-index: 5;
+  }
+  #project-title{
+    font-size: 15px; font-weight: 600; margin: 0; letter-spacing: 0.02em;
+    color: var(--text); white-space: nowrap;
+  }
+  #tabs{ display: flex; gap: 4px; flex: 1; flex-wrap: wrap; }
+  #tabs button{
+    appearance: none; border: 1px solid transparent; background: transparent;
+    color: var(--text-dim); font-size: 13px; padding: 6px 12px; border-radius: 8px;
+    cursor: pointer; font-family: inherit;
+  }
+  #tabs button:hover{ color: var(--text); border-color: var(--border); }
+  #tabs button.active{
+    background: var(--tab-active-bg); color: var(--accent-strong); font-weight: 600;
+  }
+  #confidence-legend{
+    display: flex; gap: 14px; font-size: 12px; color: var(--text-dim);
+    white-space: nowrap;
+  }
+  #confidence-legend .item{ display: inline-flex; align-items: center; gap: 5px; }
+  main{ position: relative; flex: 1; min-height: 0; }
+  #stage{ position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+  #card-panel{
+    position: absolute; top: 0; right: 0; bottom: 0; width: min(360px, 92vw);
+    background: var(--bg-elevated); border-left: 1px solid var(--border);
+    box-shadow: var(--shadow); overflow-y: auto; padding: 18px; z-index: 10;
+  }
+  #card-panel[hidden]{ display: none; }
+  #card-panel .close-btn{
+    position: absolute; top: 10px; right: 10px; appearance: none; border: none;
+    background: transparent; color: var(--text-dim); font-size: 18px; line-height: 1;
+    cursor: pointer; padding: 6px;
+  }
+  #card-panel .close-btn:hover{ color: var(--text); }
+  #card-panel .banner{
+    background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn-text);
+    font-size: 12.5px; padding: 10px 12px; border-radius: 8px; margin: 0 0 14px 0;
+  }
+  #card-panel h2{ margin: 4px 0 2px 0; font-size: 19px; }
+  #card-panel .archetype{ color: var(--text-dim); font-size: 13px; margin: 0 0 12px 0; }
+  #card-panel .grade-badge{
+    display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px;
+    padding: 3px 8px; border-radius: 999px; border: 1px solid var(--border);
+    color: var(--text-dim); margin-bottom: 12px;
+  }
+  #card-panel .quote{
+    font-style: italic; color: var(--text); border-left: 3px solid var(--accent);
+    padding: 8px 12px; margin: 10px 0 16px 0; font-size: 13.5px; background: rgba(125,211,252,0.06);
+  }
+  #card-panel section{ margin-bottom: 14px; }
+  #card-panel section h3{
+    font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--text-dim); margin: 0 0 6px 0;
+  }
+  #card-panel ul{ margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.55; }
+  #card-panel .demographics{ font-size: 13px; color: var(--text-dim); line-height: 1.6; }
+  #warnings{
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 8;
+    background: var(--warn-bg); border-top: 1px solid var(--warn-border);
+    color: var(--warn-text); font-size: 12.5px; padding: 10px 16px; max-height: 30vh;
+    overflow-y: auto;
+  }
+  #warnings[hidden]{ display: none; }
+  #warnings ul{ margin: 4px 0 0 0; padding-left: 18px; }
+</style>
+</head><body>
+<header>
+  <h1 id="project-title"></h1>
+  <nav id="tabs">
+    <button type="button" data-scene="constellation">Constellation</button>
+    <button type="button" data-scene="needs">Needs Landscape</button>
+    <button type="button" data-scene="journeys">Journey Emotions</button>
+    <button type="button" data-scene="decisions">Decision Log</button>
+  </nav>
+  <div id="confidence-legend">
+    <span class="item">⚪ assumption (가정 기반)</span>
+    <span class="item">🟡 partial (부분 검증)</span>
+    <span class="item">🟢 validated (검증됨)</span>
+  </div>
+</header>
+<main>
+  <canvas id="stage"></canvas>
+  <aside id="card-panel" hidden></aside>
+  <div id="warnings" hidden></div>
+</main>
+<script>
+(function(){
+  "use strict";
+
+  // ---------------------------------------------------------------------
+  // 1. DATA: build.py가 아래 마커 사이의 JSON을 페르소나 산출물로 치환한다.
+  //    마커 문자열과 기본 빈 데이터 구조는 build.py와의 계약이므로 변경 금지.
+  // ---------------------------------------------------------------------
+  const DATA = /*__PERSONA_DATA__*/{"config":{},"personas":[],"journeys":[],"consultations":[],"warnings":[]}/*__END__*/;
+
+  // ---------------------------------------------------------------------
+  // 2. Particle: 모든 씬이 공유하는 파티클 베이스 클래스.
+  //    스프링 물리로 target을 향해 부드럽게 이동한다.
+  //    dashed=true면 신뢰도 assumption 등급을 점선 외곽선으로 표현하는 데 쓴다.
+  // ---------------------------------------------------------------------
+  class Particle{
+    constructor(opts){
+      opts = opts || {};
+      this.x = opts.x || 0;
+      this.y = opts.y || 0;
+      this.vx = opts.vx || 0;
+      this.vy = opts.vy || 0;
+      this.target = opts.target || { x: this.x, y: this.y };
+      this.radius = opts.radius != null ? opts.radius : 4;
+      this.color = opts.color || "#7dd3fc";
+      this.alpha = opts.alpha != null ? opts.alpha : 1;
+      this.dashed = !!opts.dashed;
+    }
+
+    // spring physics: v += (target - pos) * k; v *= damping; pos += v
+    update(k, damping){
+      k = k != null ? k : 0.02;
+      damping = damping != null ? damping : 0.85;
+      this.vx += (this.target.x - this.x) * k;
+      this.vy += (this.target.y - this.y) * k;
+      this.vx *= damping;
+      this.vy *= damping;
+      this.x += this.vx;
+      this.y += this.vy;
+    }
+
+    draw(ctx){
+      ctx.save();
+      ctx.globalAlpha = this.alpha;
+      ctx.strokeStyle = this.color;
+      ctx.fillStyle = this.color;
+      if(this.dashed){
+        ctx.setLineDash([3, 3]);
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+
+  // ---------------------------------------------------------------------
+  // 2b. Constellation scene — Task 7.
+  //     페르소나당 파티클 군집(golden-angle spiral)을 원형 레이아웃으로 배치하고,
+  //     신뢰도(confidence)와 role을 색/알파/점선으로 시각화한다.
+  // ---------------------------------------------------------------------
+  function cssVar(name, fallback){
+    const v = getComputedStyle(document.documentElement).getPropertyValue(name);
+    return (v && v.trim()) || fallback;
+  }
+
+  function makeConstellationScene(){
+    const GOLDEN_ANGLE = 2.39996322972865332; // 137.5deg in radians
+    const CLUSTER_SPREAD = 32; // golden-spiral 배치 반경(px)
+    const HIT_PADDING = 20; // 클릭 판정 여유(px)
+    const EMPTY_MESSAGE = "페르소나가 아직 없습니다 — /persona-maker:generate를 실행하세요";
+
+    const CONFIDENCE_ALPHA = { assumption: 0.45, partial: 0.7, validated: 1.0 };
+    const CONFIDENCE_DASHED = { assumption: true, partial: false, validated: false };
+    const GRADE_EMOJI = { assumption: "⚪", partial: "🟡", validated: "🟢" };
+
+    let _ctx = null;
+    let clusters = [];
+    let activeCluster = null;
+    let isEmpty = false;
+
+    function roleColors(){
+      return {
+        primary: cssVar("--accent-strong", "#38bdf8"),
+        secondary: cssVar("--text-dim", "#9aa4c0"),
+        anti: "#b06a6a" // 채도 낮은 경고색(붉은 회색) — 기존 CSS 변수 없음, 씬 내 상수로 정의
+      };
+    }
+
+    function buildClusters(ctx, personas){
+      const canvas = ctx.canvas;
+      const dpr = window.devicePixelRatio || 1;
+      const w = canvas.width / dpr;
+      const h = canvas.height / dpr;
+      const centerX = w / 2;
+      const centerY = h / 2;
+      const layoutRadius = Math.max(60, Math.min(w, h) * 0.32);
+      const n = personas.length;
+      const angleStep = (Math.PI * 2) / n;
+      const startAngle = -Math.PI / 2;
+      const colors = roleColors();
+
+      return personas.map(function(persona, i){
+        const angle = startAngle + i * angleStep;
+        const cx = centerX + layoutRadius * Math.cos(angle);
+        const cy = centerY + layoutRadius * Math.sin(angle);
+        const confidence = persona.confidence || "assumption";
+        const color = colors[persona.role] || colors.secondary;
+        const alpha = CONFIDENCE_ALPHA[confidence] != null ? CONFIDENCE_ALPHA[confidence] : CONFIDENCE_ALPHA.assumption;
+        const dashed = !!CONFIDENCE_DASHED[confidence];
+        const count = 30 + Math.floor(Math.random() * 21); // 30~50개
+
+        const particles = [];
+        for(let j = 0; j < count; j++){
+          const spiralAngle = j * GOLDEN_ANGLE;
+          const spiralRadius = CLUSTER_SPREAD * Math.sqrt(j / count);
+          const tx = cx + spiralRadius * Math.cos(spiralAngle);
+          const ty = cy + spiralRadius * Math.sin(spiralAngle);
+          const p = new Particle({
+            x: cx + (Math.random() - 0.5) * 4,
+            y: cy + (Math.random() - 0.5) * 4,
+            target: { x: tx, y: ty },
+            radius: 1.8 + (j % 3) * 0.35,
+            color: color,
+            alpha: alpha,
+            dashed: dashed
+          });
+          p.origTarget = { x: tx, y: ty };
+          particles.push(p);
+        }
+
+        return {
+          persona: persona,
+          cx: cx,
+          cy: cy,
+          hitRadius: CLUSTER_SPREAD + HIT_PADDING,
+          particles: particles,
+          scattered: false
+        };
+      });
+    }
+
+    function scatterCluster(cluster, w, h){
+      cluster.scattered = true;
+      cluster.particles.forEach(function(p){
+        const edge = Math.floor(Math.random() * 4);
+        let tx, ty;
+        if(edge === 0){ tx = Math.random() * w; ty = -20; }
+        else if(edge === 1){ tx = w + 20; ty = Math.random() * h; }
+        else if(edge === 2){ tx = Math.random() * w; ty = h + 20; }
+        else { tx = -20; ty = Math.random() * h; }
+        p.target.x = tx;
+        p.target.y = ty;
+      });
+    }
+
+    function revertCluster(cluster){
+      if(!cluster) return;
+      cluster.scattered = false;
+      cluster.particles.forEach(function(p){
+        p.target.x = p.origTarget.x;
+        p.target.y = p.origTarget.y;
+      });
+    }
+
+    function drawLabel(ctx, cluster){
+      const persona = cluster.persona;
+      const confidence = persona.confidence || "assumption";
+      const emoji = GRADE_EMOJI[confidence] || GRADE_EMOJI.assumption;
+      const labelY = cluster.cy + CLUSTER_SPREAD + 18;
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = cssVar("--text", "#e8ecf8");
+      ctx.font = "600 12.5px -apple-system, sans-serif";
+      ctx.fillText(emoji + " " + persona.name, cluster.cx, labelY);
+      ctx.fillStyle = cssVar("--text-dim", "#9aa4c0");
+      ctx.font = "11px -apple-system, sans-serif";
+      ctx.fillText(persona.archetype || "", cluster.cx, labelY + 16);
+      ctx.restore();
+    }
+
+    function drawEmptyState(ctx, w, h){
+      ctx.save();
+      ctx.fillStyle = cssVar("--text-dim", "#9aa4c0");
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "14px -apple-system, sans-serif";
+      ctx.fillText(EMPTY_MESSAGE, w / 2, h / 2);
+      ctx.restore();
+    }
+
+    return {
+      enter(ctx, data){
+        _ctx = ctx;
+        const personas = (data && data.personas) || [];
+        activeCluster = null;
+        isEmpty = personas.length === 0;
+        clusters = isEmpty ? [] : buildClusters(ctx, personas);
+      },
+      tick(dt){
+        if(!_ctx) return;
+        const canvas = _ctx.canvas;
+        const dpr = window.devicePixelRatio || 1;
+        const w = canvas.width / dpr;
+        const h = canvas.height / dpr;
+
+        if(isEmpty){
+          drawEmptyState(_ctx, w, h);
+          return;
+        }
+
+        // 카드 패널이 사용자에 의해(close 버튼) 닫히면 흩어진 군집을 원위치로 복귀시킨다.
+        if(activeCluster){
+          const panel = document.getElementById("card-panel");
+          if(panel && panel.hidden){
+            revertCluster(activeCluster);
+            activeCluster = null;
+          }
+        }
+
+        clusters.forEach(function(cluster){
+          cluster.particles.forEach(function(p){
+            p.update(0.05, 0.88);
+            p.draw(_ctx);
+          });
+          drawLabel(_ctx, cluster);
+        });
+      },
+      onClick(x, y){
+        if(!_ctx || !clusters.length) return;
+        let hit = null;
+        for(let i = 0; i < clusters.length; i++){
+          const c = clusters[i];
+          const dx = x - c.cx, dy = y - c.cy;
+          if(Math.sqrt(dx * dx + dy * dy) <= c.hitRadius){ hit = c; break; }
+        }
+        if(!hit) return;
+
+        if(activeCluster === hit){
+          renderCard(hit.persona);
+          return;
+        }
+
+        const canvas = _ctx.canvas;
+        const dpr = window.devicePixelRatio || 1;
+        const w = canvas.width / dpr;
+        const h = canvas.height / dpr;
+
+        if(activeCluster) revertCluster(activeCluster);
+        scatterCluster(hit, w, h);
+        activeCluster = hit;
+        renderCard(hit.persona);
+      },
+      exit(){
+        if(activeCluster){
+          revertCluster(activeCluster);
+          activeCluster = null;
+        }
+        const panel = document.getElementById("card-panel");
+        if(panel){ panel.hidden = true; panel.innerHTML = ""; }
+        _ctx = null;
+        clusters = [];
+      }
+    };
+  }
+
+  // ---------------------------------------------------------------------
+  // 2c. Needs Landscape scene — Task 8.
+  //     전체 페르소나의 goals+frustrations를 유사 텍스트 기준으로 병합해
+  //     노드로 만들고, 공유 페르소나 수에 비례한 크기·궤도 파티클로 표현한다.
+  // ---------------------------------------------------------------------
+  function makeNeedsScene(){
+    const EMPTY_MESSAGE = "페르소나가 아직 없습니다 — /persona-maker:generate를 실행하세요";
+    const FRUSTRATION_COLOR = "#c1555f";
+    const NODE_MIN_GAP = 14;
+
+    function roleColorMap(){
+      return {
+        primary: cssVar("--accent-strong", "#38bdf8"),
+        secondary: cssVar("--text-dim", "#9aa4c0"),
+        anti: "#b06a6a"
+      };
+    }
+
+    function warningsOverlayHeight(){
+      // #warnings는 main 안에 position:absolute; bottom:0으로 캔버스 위에 겹쳐 그려진다.
+      // 노드/라벨이 그 뒤에 가려지지 않도록 실제 렌더 높이만큼 아래쪽 여백을 확보한다.
+      const el = document.getElementById("warnings");
+      if(!el || el.hidden) return 0;
+      return el.getBoundingClientRect().height;
+    }
+
+    function normalizeText(s){ return String(s || "").replace(/\s+/g, ""); }
+
+    function mergeInto(list, text, personaId){
+      const norm = normalizeText(text);
+      if(!norm) return;
+      for(let i = 0; i < list.length; i++){
+        const node = list[i];
+        for(let j = 0; j < node.normTexts.length; j++){
+          const other = node.normTexts[j];
+          if(norm === other || norm.indexOf(other) !== -1 || other.indexOf(norm) !== -1){
+            node.personaIds.add(personaId);
+            node.normTexts.push(norm);
+            return;
+          }
+        }
+      }
+      list.push({ label: text, normTexts: [norm], personaIds: new Set([personaId]) });
+    }
+
+    function buildNodes(personas){
+      const roleById = {};
+      personas.forEach(function(p){ roleById[p.id] = p.role; });
+
+      const goalRaw = [];
+      const frustRaw = [];
+      personas.forEach(function(p){
+        (p.goals || []).forEach(function(g){ mergeInto(goalRaw, g, p.id); });
+        (p.frustrations || []).forEach(function(f){ mergeInto(frustRaw, f, p.id); });
+      });
+
+      function toNode(n, type){
+        const personaIdList = Array.from(n.personaIds);
+        const count = personaIdList.length;
+        const names = personaIdList.map(function(id){
+          const found = personas.find(function(p){ return p.id === id; });
+          return found ? found.name : id;
+        });
+        return {
+          type: type,
+          label: n.label,
+          count: count,
+          radius: 18 + count * 10,
+          personaIds: personaIdList,
+          names: names,
+          particleCount: Math.max(4, Math.min(28, count * 5)),
+          cx: 0, cy: 0,
+          particles: [],
+          isTop: false
+        };
+      }
+
+      const nodes = goalRaw.map(function(n){ return toNode(n, "goal"); })
+        .concat(frustRaw.map(function(n){ return toNode(n, "frustration"); }));
+
+      const sorted = nodes.slice().sort(function(a, b){ return b.count - a.count; });
+      sorted.slice(0, 3).forEach(function(n){ n.isTop = true; });
+
+      return { nodes: nodes, roleById: roleById };
+    }
+
+    function layoutNodes(nodes, w, h){
+      const padTop = 30, padSide = 40, padBottom = 30 + warningsOverlayHeight();
+      const cols = Math.max(1, Math.ceil(Math.sqrt(nodes.length)));
+      const rows = Math.max(1, Math.ceil(nodes.length / cols));
+      const cellW = (w - padSide * 2) / cols;
+      const cellH = (h - padTop - padBottom) / rows;
+      nodes.forEach(function(node, i){
+        const col = i % cols, row = Math.floor(i / cols);
+        node.cx = padSide + cellW * (col + 0.5) + (Math.random() - 0.5) * cellW * 0.35;
+        node.cy = padTop + cellH * (row + 0.5) + (Math.random() - 0.5) * cellH * 0.35;
+      });
+      for(let iter = 0; iter < 200; iter++){
+        let moved = false;
+        for(let i = 0; i < nodes.length; i++){
+          for(let j = i + 1; j < nodes.length; j++){
+            const a = nodes[i], b = nodes[j];
+            const dx = b.cx - a.cx, dy = b.cy - a.cy;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 0.001;
+            const minDist = a.radius + b.radius + NODE_MIN_GAP;
+            if(dist < minDist){
+              moved = true;
+              const overlap = (minDist - dist) / 2;
+              const ux = dx / dist, uy = dy / dist;
+              a.cx -= ux * overlap; a.cy -= uy * overlap;
+              b.cx += ux * overlap; b.cy += uy * overlap;
+            }
+          }
+        }
+        nodes.forEach(function(n){
+          n.cx = Math.min(w - padSide, Math.max(padSide, n.cx));
+          n.cy = Math.min(h - padBottom, Math.max(padTop, n.cy));
+        });
+        if(!moved) break;
+      }
+    }
+
+    function buildParticles(nodes, roleById){
+      const colors = roleColorMap();
+      nodes.forEach(function(node){
+        const particleColors = node.personaIds.map(function(id){
+          return colors[roleById[id]] || colors.secondary;
+        });
+        const orbitBase = node.radius + 9;
+        const particles = [];
+        for(let i = 0; i < node.particleCount; i++){
+          particles.push({
+            angle: Math.random() * Math.PI * 2,
+            speed: (0.0006 + Math.random() * 0.0007) * (Math.random() < 0.5 ? 1 : -1),
+            orbitR: orbitBase + Math.random() * 7,
+            color: particleColors[i % particleColors.length] || colors.secondary
+          });
+        }
+        node.particles = particles;
+      });
+    }
+
+    function truncateLabel(s){
+      s = String(s || "");
+      return s.length > 14 ? s.slice(0, 13) + "…" : s;
+    }
+
+    function drawEmptyState(ctx, w, h){
+      ctx.save();
+      ctx.fillStyle = cssVar("--text-dim", "#9aa4c0");
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "14px -apple-system, sans-serif";
+      ctx.fillText(EMPTY_MESSAGE, w / 2, h / 2);
+      ctx.restore();
+    }
+
+    function drawNodeAndParticles(ctx, node, dt){
+      const isFrust = node.type === "frustration";
+      const baseColor = isFrust ? FRUSTRATION_COLOR : cssVar("--accent-strong", "#38bdf8");
+      ctx.save();
+      ctx.globalAlpha = node.isTop ? 0.24 : 0.14;
+      ctx.fillStyle = baseColor;
+      ctx.beginPath();
+      ctx.arc(node.cx, node.cy, node.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.lineWidth = node.isTop ? 2.4 : 1.4;
+      ctx.strokeStyle = baseColor;
+      ctx.stroke();
+      ctx.restore();
+
+      node.particles.forEach(function(p){
+        p.angle += p.speed * dt;
+        const x = node.cx + p.orbitR * Math.cos(p.angle);
+        const y = node.cy + p.orbitR * Math.sin(p.angle);
+        ctx.save();
+        ctx.globalAlpha = 0.9;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(x, y, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      if(node.isTop){
+        ctx.fillStyle = cssVar("--text", "#e8ecf8");
+        ctx.font = "700 11px -apple-system, sans-serif";
+        ctx.fillText("★ TOP", node.cx, node.cy + node.radius + 4);
+        ctx.font = "700 12.5px -apple-system, sans-serif";
+        ctx.fillText(truncateLabel(node.label), node.cx, node.cy + node.radius + 18);
+      } else {
+        ctx.fillStyle = cssVar("--text-dim", "#9aa4c0");
+        ctx.font = "10.5px -apple-system, sans-serif";
+        ctx.fillText(truncateLabel(node.label), node.cx, node.cy + node.radius + 4);
+      }
+      ctx.restore();
+    }
+
+    function drawTooltip(ctx, node, mx, my){
+      const lines = [(node.type === "frustration" ? "⚠ " : "") + node.label]
+        .concat(node.names.map(function(n){ return "· " + n; }));
+      ctx.save();
+      ctx.font = "12px -apple-system, sans-serif";
+      const textW = Math.max.apply(null, lines.map(function(l){ return ctx.measureText(l).width; }));
+      const boxW = textW + 20;
+      const boxH = lines.length * 16 + 12;
+      const canvas = ctx.canvas;
+      const dpr = window.devicePixelRatio || 1;
+      const cw = canvas.width / dpr, ch = canvas.height / dpr;
+      let bx = mx + 14, by = my + 14;
+      if(bx + boxW > cw) bx = mx - boxW - 14;
+      if(by + boxH > ch) by = my - boxH - 14;
+      ctx.fillStyle = cssVar("--bg-elevated", "#131a30");
+      ctx.strokeStyle = cssVar("--border", "#26305090");
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      if(ctx.roundRect) ctx.roundRect(bx, by, boxW, boxH, 6); else ctx.rect(bx, by, boxW, boxH);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = cssVar("--text", "#e8ecf8");
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      lines.forEach(function(line, i){
+        ctx.fillText(line, bx + 10, by + 8 + i * 16);
+      });
+      ctx.restore();
+    }
+
+    let _ctx = null, _canvas = null, nodes = [], isEmpty = true;
+    let mouseX = -9999, mouseY = -9999;
+
+    function onMouseMove(evt){
+      const rect = _canvas.getBoundingClientRect();
+      mouseX = evt.clientX - rect.left;
+      mouseY = evt.clientY - rect.top;
+    }
+
+    return {
+      enter(ctx, data){
+        _ctx = ctx;
+        _canvas = ctx.canvas;
+        const personas = (data && data.personas) || [];
+        isEmpty = personas.length === 0;
+        mouseX = -9999; mouseY = -9999;
+        if(!isEmpty){
+          const dpr = window.devicePixelRatio || 1;
+          const w = _canvas.width / dpr, h = _canvas.height / dpr;
+          const built = buildNodes(personas);
+          nodes = built.nodes;
+          layoutNodes(nodes, w, h);
+          buildParticles(nodes, built.roleById);
+        } else {
+          nodes = [];
+        }
+        _canvas.addEventListener("mousemove", onMouseMove);
+      },
+      tick(dt){
+        if(!_ctx) return;
+        const canvas = _ctx.canvas;
+        const dpr = window.devicePixelRatio || 1;
+        const w = canvas.width / dpr, h = canvas.height / dpr;
+        if(isEmpty){ drawEmptyState(_ctx, w, h); return; }
+
+        let hovered = null;
+        nodes.forEach(function(node){
+          drawNodeAndParticles(_ctx, node, dt);
+          const dx = mouseX - node.cx, dy = mouseY - node.cy;
+          if(Math.sqrt(dx * dx + dy * dy) <= node.radius) hovered = node;
+        });
+        if(hovered) drawTooltip(_ctx, hovered, mouseX, mouseY);
+      },
+      onClick(x, y){ /* 호버 툴팁으로 충분 — 클릭 동작 없음 */ },
+      exit(){
+        if(_canvas) _canvas.removeEventListener("mousemove", onMouseMove);
+        _ctx = null; _canvas = null; nodes = [];
+      }
+    };
+  }
+
+  // ---------------------------------------------------------------------
+  // 2d. Journey Emotions scene — Task 8.
+  //     페르소나별 5단계 감정 곡선을 부드럽게 그리고, 곡선을 따라 흐르는
+  //     잔상 파티클로 여정의 흐름을 표현한다. 상단 칩으로 곡선을 토글한다.
+  // ---------------------------------------------------------------------
+  function makeJourneysScene(){
+    const EMPTY_MESSAGE = "저니맵이 아직 없습니다 — /persona-maker:generate를 실행하세요";
+    const STAGE_LABELS = ["awareness", "consideration", "decision", "usage", "advocacy"];
+    const CONFIDENCE_ALPHA = { assumption: 0.45, partial: 0.7, validated: 1.0 };
+    const PARTICLES_PER_CURVE = 3;
+    const TRAIL_LENGTH = 9;
+    const IMPROVEMENT_COLOR = "#c1555f";
+
+    function roleColorMap(){
+      return {
+        primary: cssVar("--accent-strong", "#38bdf8"),
+        secondary: cssVar("--text-dim", "#9aa4c0"),
+        anti: "#b06a6a"
+      };
+    }
+
+    function catmullRom(p0, p1, p2, p3, t){
+      const t2 = t * t, t3 = t2 * t;
+      return {
+        x: 0.5 * ((2 * p1.x) + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3),
+        y: 0.5 * ((2 * p1.y) + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3)
+      };
+    }
+
+    function sampleCurve(pts, samplesPerSeg){
+      const padded = [pts[0]].concat(pts, [pts[pts.length - 1]]);
+      const out = [];
+      for(let i = 1; i < padded.length - 2; i++){
+        for(let s = 0; s < samplesPerSeg; s++){
+          out.push(catmullRom(padded[i - 1], padded[i], padded[i + 1], padded[i + 2], s / samplesPerSeg));
+        }
+      }
+      out.push(pts[pts.length - 1]);
+      return out;
+    }
+
+    let _ctx = null, _canvas = null, curves = [], isEmpty = true;
+    let chips = [], visibility = {};
+    let chartGeom = null;
+    let improvementMarker = null;
+
+    function warningsOverlayHeight(){
+      // #warnings는 main 안에 position:absolute; bottom:0으로 캔버스 위에 겹쳐 그려진다.
+      // 축/라벨이 그 뒤에 가려지지 않도록 실제 렌더 높이만큼 아래쪽 여백을 확보한다.
+      const el = document.getElementById("warnings");
+      if(!el || el.hidden) return 0;
+      return el.getBoundingClientRect().height;
+    }
+
+    function buildGeometry(w, h){
+      const chipTop = 14, chipHeight = 24;
+      const chartTop = chipTop + chipHeight + 20;
+      const marginLeft = 46, marginRight = 24;
+      const marginBottom = 34 + warningsOverlayHeight();
+      const chartBottom = h - marginBottom;
+      const chartWidth = Math.max(40, w - marginLeft - marginRight);
+      const chartHeight = Math.max(40, chartBottom - chartTop);
+      return {
+        marginLeft: marginLeft, chartTop: chartTop, chartBottom: chartBottom,
+        chartWidth: chartWidth, chartHeight: chartHeight
+      };
+    }
+
+    function stageX(geom, i){ return geom.marginLeft + (geom.chartWidth * i) / (STAGE_LABELS.length - 1); }
+    function emotionY(geom, v){
+      const clamped = Math.max(-2, Math.min(2, v));
+      return geom.chartTop + geom.chartHeight - ((clamped + 2) / 4) * geom.chartHeight;
+    }
+
+    function buildCurves(journeys, personas, geom){
+      const personaById = {};
+      personas.forEach(function(p){ personaById[p.id] = p; });
+      const colors = roleColorMap();
+
+      return journeys.map(function(j){
+        const persona = personaById[j.persona_id];
+        const confidence = (persona && persona.confidence) || "assumption";
+        const color = colors[(persona && persona.role) || "secondary"] || colors.secondary;
+        const alpha = CONFIDENCE_ALPHA[confidence] != null ? CONFIDENCE_ALPHA[confidence] : CONFIDENCE_ALPHA.assumption;
+        const emotions = j.emotions || [];
+        const pts = STAGE_LABELS.map(function(_, i){
+          return { x: stageX(geom, i), y: emotionY(geom, emotions[i] != null ? emotions[i] : 0) };
+        });
+        const samples = sampleCurve(pts, 24);
+        const particles = [];
+        for(let i = 0; i < PARTICLES_PER_CURVE; i++){
+          particles.push({ t: i / PARTICLES_PER_CURVE, speed: 0.00018 + Math.random() * 0.00006, history: [] });
+        }
+        return {
+          personaId: j.persona_id,
+          name: persona ? persona.name : j.persona_id,
+          color: color,
+          alpha: alpha,
+          points: pts,
+          samples: samples,
+          particles: particles,
+          emotions: emotions
+        };
+      });
+    }
+
+    function computeImprovementMarker(curves, geom){
+      let best = null;
+      curves.forEach(function(c){
+        c.emotions.forEach(function(v, i){
+          if(v == null) return;
+          if(best === null || v < best.value || (v === best.value && i < best.stageIndex)){
+            best = { value: v, stageIndex: i };
+          }
+        });
+      });
+      if(!best) return null;
+      return { x: stageX(geom, best.stageIndex), y: emotionY(geom, best.value) };
+    }
+
+    function buildChips(ctx, curves){
+      const chipTop = 14, chipHeight = 24, gap = 8, padX = 12;
+      ctx.save();
+      ctx.font = "11.5px -apple-system, sans-serif";
+      let x = 14;
+      const built = curves.map(function(c){
+        const textW = ctx.measureText(c.name).width;
+        const chip = { personaId: c.personaId, name: c.name, color: c.color, x: x, y: chipTop, w: textW + padX * 2, h: chipHeight };
+        x += chip.w + gap;
+        return chip;
+      });
+      ctx.restore();
+      return built;
+    }
+
+    function drawEmptyState(ctx, w, h){
+      ctx.save();
+      ctx.fillStyle = cssVar("--text-dim", "#9aa4c0");
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "14px -apple-system, sans-serif";
+      ctx.fillText(EMPTY_MESSAGE, w / 2, h / 2);
+      ctx.restore();
+    }
+
+    function drawAxes(ctx, geom){
+      ctx.save();
+      ctx.strokeStyle = cssVar("--border", "#26305090");
+      ctx.fillStyle = cssVar("--text-dim", "#9aa4c0");
+      ctx.font = "11px -apple-system, sans-serif";
+
+      const zeroY = emotionY(geom, 0);
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(geom.marginLeft, zeroY);
+      ctx.lineTo(geom.marginLeft + geom.chartWidth, zeroY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      for(let v = -2; v <= 2; v++){
+        ctx.fillText(String(v), geom.marginLeft - 8, emotionY(geom, v));
+      }
+
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      STAGE_LABELS.forEach(function(label, i){
+        ctx.fillText(label, stageX(geom, i), geom.chartBottom + 8);
+      });
+      ctx.restore();
+    }
+
+    function drawChips(ctx, chips){
+      ctx.save();
+      chips.forEach(function(chip){
+        const visible = visibility[chip.personaId] !== false;
+        ctx.globalAlpha = visible ? 1 : 0.35;
+        ctx.fillStyle = cssVar("--bg-elevated", "#131a30");
+        ctx.strokeStyle = chip.color;
+        ctx.lineWidth = visible ? 2 : 1;
+        ctx.beginPath();
+        if(ctx.roundRect) ctx.roundRect(chip.x, chip.y, chip.w, chip.h, 999); else ctx.rect(chip.x, chip.y, chip.w, chip.h);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = visible ? cssVar("--text", "#e8ecf8") : cssVar("--text-dim", "#9aa4c0");
+        ctx.font = "11.5px -apple-system, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(chip.name, chip.x + chip.w / 2, chip.y + chip.h / 2 + 1);
+      });
+      ctx.restore();
+    }
+
+    function drawCurve(ctx, curve){
+      ctx.save();
+      ctx.globalAlpha = curve.alpha;
+      ctx.strokeStyle = curve.color;
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      curve.samples.forEach(function(pt, i){
+        if(i === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y);
+      });
+      ctx.stroke();
+      curve.points.forEach(function(pt){
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = curve.color;
+        ctx.fill();
+      });
+      ctx.restore();
+    }
+
+    function updateAndDrawParticles(ctx, curve, dt){
+      curve.particles.forEach(function(p){
+        p.t += p.speed * dt;
+        if(p.t > 1) p.t -= 1;
+        const idx = Math.min(curve.samples.length - 1, Math.floor(p.t * (curve.samples.length - 1)));
+        const pos = curve.samples[idx];
+        p.history.unshift({ x: pos.x, y: pos.y });
+        if(p.history.length > TRAIL_LENGTH) p.history.length = TRAIL_LENGTH;
+        p.history.forEach(function(hp, i){
+          const a = curve.alpha * (1 - i / TRAIL_LENGTH);
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, a);
+          ctx.fillStyle = curve.color;
+          ctx.beginPath();
+          ctx.arc(hp.x, hp.y, 3.2 * (1 - (i / TRAIL_LENGTH) * 0.6), 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        });
+      });
+    }
+
+    function drawImprovementMarker(ctx, marker){
+      if(!marker) return;
+      ctx.save();
+      ctx.strokeStyle = IMPROVEMENT_COLOR;
+      ctx.fillStyle = IMPROVEMENT_COLOR;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(marker.x, marker.y, 7, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "bottom";
+      ctx.font = "700 11.5px -apple-system, sans-serif";
+      ctx.fillText("▼ 개선 기회", marker.x, marker.y - 10);
+      ctx.restore();
+    }
+
+    function chipAt(x, y){
+      for(let i = 0; i < chips.length; i++){
+        const c = chips[i];
+        if(x >= c.x && x <= c.x + c.w && y >= c.y && y <= c.y + c.h) return c;
+      }
+      return null;
+    }
+
+    return {
+      enter(ctx, data){
+        _ctx = ctx;
+        _canvas = ctx.canvas;
+        const journeys = (data && data.journeys) || [];
+        const personas = (data && data.personas) || [];
+        isEmpty = journeys.length === 0;
+        if(!isEmpty){
+          const dpr = window.devicePixelRatio || 1;
+          const w = _canvas.width / dpr, h = _canvas.height / dpr;
+          chartGeom = buildGeometry(w, h);
+          curves = buildCurves(journeys, personas, chartGeom);
+          chips = buildChips(ctx, curves);
+          visibility = {};
+          curves.forEach(function(c){ visibility[c.personaId] = true; });
+          improvementMarker = computeImprovementMarker(curves, chartGeom);
+        } else {
+          curves = []; chips = []; visibility = {}; improvementMarker = null;
+        }
+      },
+      tick(dt){
+        if(!_ctx) return;
+        const canvas = _ctx.canvas;
+        const dpr = window.devicePixelRatio || 1;
+        const w = canvas.width / dpr, h = canvas.height / dpr;
+        if(isEmpty){ drawEmptyState(_ctx, w, h); return; }
+
+        drawAxes(_ctx, chartGeom);
+        curves.forEach(function(curve){
+          if(visibility[curve.personaId] === false) return;
+          drawCurve(_ctx, curve);
+          updateAndDrawParticles(_ctx, curve, dt);
+        });
+        drawImprovementMarker(_ctx, improvementMarker);
+        drawChips(_ctx, chips);
+      },
+      onClick(x, y){
+        const chip = chipAt(x, y);
+        if(!chip) return;
+        visibility[chip.personaId] = visibility[chip.personaId] === false ? true : false;
+      },
+      exit(){
+        _ctx = null; _canvas = null; curves = []; chips = []; visibility = {}; improvementMarker = null; chartGeom = null;
+      }
+    };
+  }
+
+  // ---------------------------------------------------------------------
+  // 2e. Decision Log scene — Task 8.
+  //     상담 목록에서 하나를 선택하면 참여 페르소나들의 반응(accept/neutral/reject)
+  //     에 따라 파티클 군집이 갈라져 이동한다.
+  // ---------------------------------------------------------------------
+  function makeDecisionsScene(){
+    const EMPTY_MESSAGE = "상담 기록이 아직 없습니다 — /persona-maker:consult를 실행하세요";
+    const PARTICLES_PER_PERSONA = 12;
+
+    function zoneColors(){
+      return {
+        accept: cssVar("--grade-validated", "#6ee7a0"),
+        neutral: cssVar("--text-dim", "#9aa4c0"),
+        reject: "#c1555f"
+      };
+    }
+
+    function buildListItems(consultations){
+      const itemH = 56, padTop = 16, padX = 14;
+      return consultations.map(function(c, i){
+        return { index: i, x: padX, y: padTop + i * (itemH + 8), h: itemH, topic: c.topic, date: c.date };
+      });
+    }
+
+    function personaLookup(personas){
+      const byId = {};
+      personas.forEach(function(p){ byId[p.id] = p; });
+      return byId;
+    }
+
+    function buildClusters(consultation, personaById, w, h, listWidth){
+      const zones = zoneColors();
+      const rightX0 = listWidth + 24, rightX1 = w - 24;
+      const rightW = Math.max(60, rightX1 - rightX0);
+      const zoneX = {
+        reject: rightX0 + rightW * 0.18,
+        neutral: rightX0 + rightW * 0.5,
+        accept: rightX0 + rightW * 0.82
+      };
+      const reactions = consultation.reactions || {};
+      const grouped = { accept: [], neutral: [], reject: [] };
+      Object.keys(reactions).forEach(function(id){
+        const r = reactions[id];
+        if(grouped[r]) grouped[r].push(id);
+      });
+
+      const clusters = [];
+      let assumptionCount = 0;
+      Object.keys(grouped).forEach(function(zone){
+        grouped[zone].forEach(function(id, zi){
+          const persona = personaById[id];
+          const name = persona ? persona.name : id;
+          if(persona && persona.confidence === "assumption") assumptionCount++;
+          const cy = h * 0.5 + (zi - (grouped[zone].length - 1) / 2) * 90;
+          const cx = zoneX[zone];
+          const particles = [];
+          for(let k = 0; k < PARTICLES_PER_PERSONA; k++){
+            const angle = Math.random() * Math.PI * 2;
+            particles.push(new Particle({
+              x: w / 2, y: h / 2,
+              target: { x: cx + Math.cos(angle) * (18 + Math.random() * 14), y: cy + Math.sin(angle) * (18 + Math.random() * 14) },
+              radius: 2 + Math.random(),
+              color: zones[zone],
+              alpha: 0.85
+            }));
+          }
+          clusters.push({ personaId: id, name: name, zone: zone, cx: cx, cy: cy, particles: particles });
+        });
+      });
+
+      return { clusters: clusters, assumptionCount: assumptionCount };
+    }
+
+    function drawEmptyState(ctx, w, h){
+      ctx.save();
+      ctx.fillStyle = cssVar("--text-dim", "#9aa4c0");
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "14px -apple-system, sans-serif";
+      ctx.fillText(EMPTY_MESSAGE, w / 2, h / 2);
+      ctx.restore();
+    }
+
+    function wrapText(ctx, text, x, y, maxWidth, lineHeight){
+      const chars = String(text || "").split("");
+      let line = "", ly = y, lines = 0;
+      for(let i = 0; i < chars.length && lines < 2; i++){
+        const test = line + chars[i];
+        if(ctx.measureText(test).width > maxWidth && line){
+          ctx.fillText(line, x, ly);
+          line = chars[i];
+          ly += lineHeight;
+          lines++;
+        } else {
+          line = test;
+        }
+      }
+      if(lines < 2) ctx.fillText(line, x, ly);
+    }
+
+    function drawList(ctx, items, listWidth, selectedIndex){
+      ctx.save();
+      ctx.strokeStyle = cssVar("--border", "#26305090");
+      ctx.beginPath();
+      ctx.moveTo(listWidth, 0);
+      ctx.lineTo(listWidth, ctx.canvas.height);
+      ctx.stroke();
+
+      items.forEach(function(item){
+        const selected = item.index === selectedIndex;
+        if(selected){
+          ctx.fillStyle = cssVar("--tab-active-bg", "#1c2440");
+          ctx.beginPath();
+          if(ctx.roundRect) ctx.roundRect(6, item.y - 6, listWidth - 12, item.h, 8); else ctx.rect(6, item.y - 6, listWidth - 12, item.h);
+          ctx.fill();
+        }
+        ctx.fillStyle = selected ? cssVar("--accent-strong", "#38bdf8") : cssVar("--text", "#e8ecf8");
+        ctx.font = "600 12.5px -apple-system, sans-serif";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        wrapText(ctx, item.topic, item.x, item.y, listWidth - item.x - 16, 15);
+        ctx.fillStyle = cssVar("--text-dim", "#9aa4c0");
+        ctx.font = "11px -apple-system, sans-serif";
+        ctx.fillText(item.date, item.x, item.y + 36);
+      });
+      ctx.restore();
+    }
+
+    function drawZoneLabels(ctx, listWidth, w, h){
+      const zones = zoneColors();
+      const rightX0 = listWidth + 24, rightX1 = w - 24;
+      const rightW = Math.max(60, rightX1 - rightX0);
+      const labelY = h * 0.14;
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "600 12px -apple-system, sans-serif";
+      ctx.fillStyle = zones.reject;
+      ctx.fillText("REJECT", rightX0 + rightW * 0.18, labelY);
+      ctx.fillStyle = zones.neutral;
+      ctx.fillText("NEUTRAL", rightX0 + rightW * 0.5, labelY);
+      ctx.fillStyle = zones.accept;
+      ctx.fillText("ACCEPT", rightX0 + rightW * 0.82, labelY);
+      ctx.restore();
+    }
+
+    function drawClusters(ctx, clusters){
+      clusters.forEach(function(cluster){
+        cluster.particles.forEach(function(p){
+          p.update(0.06, 0.85);
+          p.draw(ctx);
+        });
+        ctx.save();
+        ctx.fillStyle = cssVar("--text", "#e8ecf8");
+        ctx.font = "600 11.5px -apple-system, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        ctx.fillText(cluster.name, cluster.cx, cluster.cy + 34);
+        ctx.restore();
+      });
+    }
+
+    function warningsOverlayHeight(){
+      // #warnings는 main 안에 position:absolute; bottom:0으로 캔버스 위에 겹쳐 그려진다.
+      // 신뢰도 고지 문구가 그 뒤에 가려지지 않도록 실제 렌더 높이만큼 아래쪽 여백을 확보한다.
+      const el = document.getElementById("warnings");
+      if(!el || el.hidden) return 0;
+      return el.getBoundingClientRect().height;
+    }
+
+    function drawDisclaimer(ctx, h, text){
+      if(!text) return;
+      ctx.save();
+      ctx.fillStyle = cssVar("--warn-text", "#f5d9a0");
+      ctx.font = "12px -apple-system, sans-serif";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "bottom";
+      ctx.fillText(text, 14, h - 12 - warningsOverlayHeight());
+      ctx.restore();
+    }
+
+    let _ctx = null, _canvas = null, consultations = [], isEmpty = true;
+    let listItems = [], selectedIndex = -1, clusters = [], disclaimer = "";
+    let _personas = [], _listWidth = 0;
+
+    function selectConsultation(index, w, h){
+      selectedIndex = index;
+      const c = consultations[index];
+      if(!c){ clusters = []; disclaimer = ""; return; }
+      const built = buildClusters(c, personaLookup(_personas), w, h, _listWidth);
+      clusters = built.clusters;
+      disclaimer = built.assumptionCount > 0
+        ? "⚠ 이 결론은 assumption 등급 페르소나 " + built.assumptionCount + "명을 근거에 포함합니다"
+        : "";
+    }
+
+    return {
+      enter(ctx, data){
+        _ctx = ctx;
+        _canvas = ctx.canvas;
+        consultations = (data && data.consultations) || [];
+        _personas = (data && data.personas) || [];
+        isEmpty = consultations.length === 0;
+        selectedIndex = -1;
+        clusters = [];
+        disclaimer = "";
+        if(!isEmpty){
+          const dpr = window.devicePixelRatio || 1;
+          const w = _canvas.width / dpr, h = _canvas.height / dpr;
+          _listWidth = Math.max(180, Math.min(260, w * 0.28));
+          listItems = buildListItems(consultations);
+          selectConsultation(0, w, h);
+        }
+      },
+      tick(dt){
+        if(!_ctx) return;
+        const canvas = _ctx.canvas;
+        const dpr = window.devicePixelRatio || 1;
+        const w = canvas.width / dpr, h = canvas.height / dpr;
+        if(isEmpty){ drawEmptyState(_ctx, w, h); return; }
+
+        drawList(_ctx, listItems, _listWidth, selectedIndex);
+        drawZoneLabels(_ctx, _listWidth, w, h);
+        drawClusters(_ctx, clusters);
+        drawDisclaimer(_ctx, h, disclaimer);
+      },
+      onClick(x, y){
+        if(isEmpty || x > _listWidth) return;
+        const item = listItems.find(function(it){
+          return y >= it.y - 6 && y <= it.y - 6 + it.h + 4;
+        });
+        if(!item) return;
+        const canvas = _ctx.canvas;
+        const dpr = window.devicePixelRatio || 1;
+        const w = canvas.width / dpr, h = canvas.height / dpr;
+        selectConsultation(item.index, w, h);
+      },
+      exit(){
+        _ctx = null; _canvas = null; consultations = []; listItems = [];
+        selectedIndex = -1; clusters = []; disclaimer = ""; _personas = [];
+      }
+    };
+  }
+
+  // ---------------------------------------------------------------------
+  // 3. Scene registry — 4개 탭이 구현해야 하는 공통 인터페이스.
+  //
+  //    각 씬 객체는 다음 메서드를 구현한다:
+  //      enter(ctx, data)  — 탭이 활성화될 때 1회 호출. ctx: CanvasRenderingContext2D,
+  //                          data: DATA 전체 객체. 씬 내부 상태(파티클 배열 등)를 이 시점에 구성한다.
+  //      tick(dt)          — requestAnimationFrame마다 호출. dt: 이전 프레임과의 경과 시간(ms).
+  //                          여기서 물리 업데이트 + ctx에 draw까지 수행한다(캔버스 clear는 루프가 담당).
+  //      onClick(x, y)     — 캔버스 클릭 시 호출. x, y는 CSS 픽셀 기준 캔버스 로컬 좌표
+  //                          (devicePixelRatio 보정은 루프가 이미 처리해서 넘긴다).
+  //      exit()            — 탭이 비활성화될 때 1회 호출. 타이머 정리 등 필요시 사용.
+  //
+  //    Task 7(Constellation)·Task 8(Needs/Journeys/Decisions)이 아래 placeholder를
+  //    동일 인터페이스를 유지한 채 실제 구현으로 교체한다.
+  // ---------------------------------------------------------------------
+  function makePlaceholderScene(label){
+    let _ctx = null;
+    return {
+      enter(ctx, data){ _ctx = ctx; },
+      tick(dt){
+        if(!_ctx) return;
+        const canvas = _ctx.canvas;
+        const w = canvas.width / (window.devicePixelRatio || 1);
+        const h = canvas.height / (window.devicePixelRatio || 1);
+        _ctx.save();
+        _ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--text-dim") || "#9aa4c0";
+        _ctx.textAlign = "center";
+        _ctx.textBaseline = "middle";
+        _ctx.font = "600 16px -apple-system, sans-serif";
+        _ctx.fillText(label, w / 2, h / 2 - 12);
+        _ctx.font = "13px -apple-system, sans-serif";
+        _ctx.fillText("구현 예정", w / 2, h / 2 + 12);
+        _ctx.restore();
+      },
+      onClick(x, y){ /* placeholder: no-op */ },
+      exit(){ _ctx = null; }
+    };
+  }
+
+  const sceneRegistry = {
+    constellation: makeConstellationScene(),
+    needs: makeNeedsScene(),
+    journeys: makeJourneysScene(),
+    decisions: makeDecisionsScene()
+  };
+
+  let currentSceneName = null;
+  let currentScene = null;
+
+  function switchScene(name){
+    if(!sceneRegistry[name] || name === currentSceneName) return;
+    if(currentScene) currentScene.exit();
+    currentSceneName = name;
+    currentScene = sceneRegistry[name];
+    document.querySelectorAll("#tabs button").forEach(function(btn){
+      btn.classList.toggle("active", btn.dataset.scene === name);
+    });
+    currentScene.enter(ctx, DATA);
+  }
+
+  // ---------------------------------------------------------------------
+  // 4. Canvas 설정 + resize + devicePixelRatio 스케일링
+  // ---------------------------------------------------------------------
+  const canvas = document.getElementById("stage");
+  const ctx = canvas.getContext("2d");
+
+  function resizeCanvas(){
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.width = Math.max(1, Math.round(rect.width * dpr));
+    canvas.height = Math.max(1, Math.round(rect.height * dpr));
+    canvas.style.width = rect.width + "px";
+    canvas.style.height = rect.height + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener("resize", resizeCanvas);
+  resizeCanvas();
+
+  canvas.addEventListener("click", function(evt){
+    const rect = canvas.getBoundingClientRect();
+    const x = evt.clientX - rect.left;
+    const y = evt.clientY - rect.top;
+    if(currentScene) currentScene.onClick(x, y);
+  });
+
+  // ---------------------------------------------------------------------
+  // 5. requestAnimationFrame 루프
+  // ---------------------------------------------------------------------
+  let lastTime = null;
+  function loop(now){
+    if(lastTime == null) lastTime = now;
+    const dt = now - lastTime;
+    lastTime = now;
+    const w = canvas.width / (window.devicePixelRatio || 1);
+    const h = canvas.height / (window.devicePixelRatio || 1);
+    ctx.clearRect(0, 0, w, h);
+    if(currentScene) currentScene.tick(dt);
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  // ---------------------------------------------------------------------
+  // 6. 탭 전환 배선
+  // ---------------------------------------------------------------------
+  document.querySelectorAll("#tabs button").forEach(function(btn){
+    btn.addEventListener("click", function(){ switchScene(btn.dataset.scene); });
+  });
+
+  // ---------------------------------------------------------------------
+  // 7. 카드 패널 렌더러
+  // ---------------------------------------------------------------------
+  const GRADE_LABEL = {
+    assumption: "⚪ assumption (가정 기반)",
+    partial: "🟡 partial (부분 검증)",
+    validated: "🟢 validated (검증됨)"
+  };
+  const ASSUMPTION_WARNING =
+    "⚪ 가정 기반 proto-persona — 실사용자 검증 전에는 중요한 의사결정 근거로 사용하지 마세요.";
+
+  function escapeHtml(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c];
+    });
+  }
+
+  function renderList(items){
+    if(!items || !items.length) return "<ul><li>(없음)</li></ul>";
+    return "<ul>" + items.map(function(i){ return "<li>" + escapeHtml(i) + "</li>"; }).join("") + "</ul>";
+  }
+
+  function renderCard(persona){
+    const panel = document.getElementById("card-panel");
+    if(!persona){ panel.hidden = true; panel.innerHTML = ""; return; }
+
+    const demo = persona.demographics || {};
+    const gradeLabel = GRADE_LABEL[persona.confidence] || persona.confidence || "";
+    const banner = persona.confidence === "assumption"
+      ? '<div class="banner">' + escapeHtml(ASSUMPTION_WARNING) + "</div>"
+      : "";
+
+    panel.innerHTML =
+      '<button type="button" class="close-btn" aria-label="닫기">&times;</button>' +
+      banner +
+      "<h2>" + escapeHtml(persona.name) + "</h2>" +
+      '<p class="archetype">' + escapeHtml(persona.archetype) + "</p>" +
+      '<span class="grade-badge">' + escapeHtml(gradeLabel) + "</span>" +
+      (persona.quote ? '<p class="quote">“' + escapeHtml(persona.quote) + '”</p>' : "") +
+      "<section><h3>Role</h3><p>" + escapeHtml(persona.role) + "</p></section>" +
+      '<section><h3>Demographics</h3><p class="demographics">' +
+        escapeHtml(demo.age != null ? demo.age + "세" : "") + " " +
+        escapeHtml(demo.occupation || "") + "<br>" +
+        escapeHtml(demo.context || "") +
+        "</p></section>" +
+      "<section><h3>Goals</h3>" + renderList(persona.goals) + "</section>" +
+      "<section><h3>Frustrations</h3>" + renderList(persona.frustrations) + "</section>" +
+      "<section><h3>Behaviors</h3>" + renderList(persona.behaviors) + "</section>" +
+      "<section><h3>Tech Savviness</h3><p>" + escapeHtml(persona.tech_savviness) + " / 5</p></section>";
+
+    panel.hidden = false;
+    panel.querySelector(".close-btn").addEventListener("click", function(){
+      panel.hidden = true;
+      panel.innerHTML = "";
+    });
+  }
+
+  // ---------------------------------------------------------------------
+  // 8. 초기 렌더: 제목, 경고 배너, 첫 씬
+  // ---------------------------------------------------------------------
+  document.getElementById("project-title").textContent =
+    (DATA.config && DATA.config.project_name) || "persona-maker";
+
+  const warningsEl = document.getElementById("warnings");
+  if(DATA.warnings && DATA.warnings.length){
+    warningsEl.innerHTML = "<strong>경고</strong><ul>" +
+      DATA.warnings.map(function(w){ return "<li>" + escapeHtml(w) + "</li>"; }).join("") +
+      "</ul>";
+    warningsEl.hidden = false;
+  } else {
+    warningsEl.hidden = true;
+  }
+
+  switchScene("constellation");
+
+  // 디버깅/후속 태스크(Task 7·8)를 위해 전역에 노출.
+  window.__personaMaker = { DATA: DATA, Particle: Particle, sceneRegistry: sceneRegistry, renderCard: renderCard };
+})();
+</script>
+</body></html>
