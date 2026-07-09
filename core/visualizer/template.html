@@ -198,6 +198,217 @@
   }
 
   // ---------------------------------------------------------------------
+  // 2b. Constellation scene — Task 7.
+  //     페르소나당 파티클 군집(golden-angle spiral)을 원형 레이아웃으로 배치하고,
+  //     신뢰도(confidence)와 role을 색/알파/점선으로 시각화한다.
+  // ---------------------------------------------------------------------
+  function cssVar(name, fallback){
+    const v = getComputedStyle(document.documentElement).getPropertyValue(name);
+    return (v && v.trim()) || fallback;
+  }
+
+  function makeConstellationScene(){
+    const GOLDEN_ANGLE = 2.39996322972865332; // 137.5deg in radians
+    const CLUSTER_SPREAD = 32; // golden-spiral 배치 반경(px)
+    const HIT_PADDING = 20; // 클릭 판정 여유(px)
+    const EMPTY_MESSAGE = "페르소나가 아직 없습니다 — /persona-maker:generate를 실행하세요";
+
+    const CONFIDENCE_ALPHA = { assumption: 0.45, partial: 0.7, validated: 1.0 };
+    const CONFIDENCE_DASHED = { assumption: true, partial: false, validated: false };
+    const GRADE_EMOJI = { assumption: "⚪", partial: "🟡", validated: "🟢" };
+
+    let _ctx = null;
+    let clusters = [];
+    let activeCluster = null;
+    let isEmpty = false;
+
+    function roleColors(){
+      return {
+        primary: cssVar("--accent-strong", "#38bdf8"),
+        secondary: cssVar("--text-dim", "#9aa4c0"),
+        anti: "#b06a6a" // 채도 낮은 경고색(붉은 회색) — 기존 CSS 변수 없음, 씬 내 상수로 정의
+      };
+    }
+
+    function buildClusters(ctx, personas){
+      const canvas = ctx.canvas;
+      const dpr = window.devicePixelRatio || 1;
+      const w = canvas.width / dpr;
+      const h = canvas.height / dpr;
+      const centerX = w / 2;
+      const centerY = h / 2;
+      const layoutRadius = Math.max(60, Math.min(w, h) * 0.32);
+      const n = personas.length;
+      const angleStep = (Math.PI * 2) / n;
+      const startAngle = -Math.PI / 2;
+      const colors = roleColors();
+
+      return personas.map(function(persona, i){
+        const angle = startAngle + i * angleStep;
+        const cx = centerX + layoutRadius * Math.cos(angle);
+        const cy = centerY + layoutRadius * Math.sin(angle);
+        const confidence = persona.confidence || "assumption";
+        const color = colors[persona.role] || colors.secondary;
+        const alpha = CONFIDENCE_ALPHA[confidence] != null ? CONFIDENCE_ALPHA[confidence] : CONFIDENCE_ALPHA.assumption;
+        const dashed = !!CONFIDENCE_DASHED[confidence];
+        const count = 30 + Math.floor(Math.random() * 21); // 30~50개
+
+        const particles = [];
+        for(let j = 0; j < count; j++){
+          const spiralAngle = j * GOLDEN_ANGLE;
+          const spiralRadius = CLUSTER_SPREAD * Math.sqrt(j / count);
+          const tx = cx + spiralRadius * Math.cos(spiralAngle);
+          const ty = cy + spiralRadius * Math.sin(spiralAngle);
+          const p = new Particle({
+            x: cx + (Math.random() - 0.5) * 4,
+            y: cy + (Math.random() - 0.5) * 4,
+            target: { x: tx, y: ty },
+            radius: 1.8 + (j % 3) * 0.35,
+            color: color,
+            alpha: alpha,
+            dashed: dashed
+          });
+          p.origTarget = { x: tx, y: ty };
+          particles.push(p);
+        }
+
+        return {
+          persona: persona,
+          cx: cx,
+          cy: cy,
+          hitRadius: CLUSTER_SPREAD + HIT_PADDING,
+          particles: particles,
+          scattered: false
+        };
+      });
+    }
+
+    function scatterCluster(cluster, w, h){
+      cluster.scattered = true;
+      cluster.particles.forEach(function(p){
+        const edge = Math.floor(Math.random() * 4);
+        let tx, ty;
+        if(edge === 0){ tx = Math.random() * w; ty = -20; }
+        else if(edge === 1){ tx = w + 20; ty = Math.random() * h; }
+        else if(edge === 2){ tx = Math.random() * w; ty = h + 20; }
+        else { tx = -20; ty = Math.random() * h; }
+        p.target.x = tx;
+        p.target.y = ty;
+      });
+    }
+
+    function revertCluster(cluster){
+      if(!cluster) return;
+      cluster.scattered = false;
+      cluster.particles.forEach(function(p){
+        p.target.x = p.origTarget.x;
+        p.target.y = p.origTarget.y;
+      });
+    }
+
+    function drawLabel(ctx, cluster){
+      const persona = cluster.persona;
+      const confidence = persona.confidence || "assumption";
+      const emoji = GRADE_EMOJI[confidence] || GRADE_EMOJI.assumption;
+      const labelY = cluster.cy + CLUSTER_SPREAD + 18;
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = cssVar("--text", "#e8ecf8");
+      ctx.font = "600 12.5px -apple-system, sans-serif";
+      ctx.fillText(emoji + " " + persona.name, cluster.cx, labelY);
+      ctx.fillStyle = cssVar("--text-dim", "#9aa4c0");
+      ctx.font = "11px -apple-system, sans-serif";
+      ctx.fillText(persona.archetype || "", cluster.cx, labelY + 16);
+      ctx.restore();
+    }
+
+    function drawEmptyState(ctx, w, h){
+      ctx.save();
+      ctx.fillStyle = cssVar("--text-dim", "#9aa4c0");
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "14px -apple-system, sans-serif";
+      ctx.fillText(EMPTY_MESSAGE, w / 2, h / 2);
+      ctx.restore();
+    }
+
+    return {
+      enter(ctx, data){
+        _ctx = ctx;
+        const personas = (data && data.personas) || [];
+        activeCluster = null;
+        isEmpty = personas.length === 0;
+        clusters = isEmpty ? [] : buildClusters(ctx, personas);
+      },
+      tick(dt){
+        if(!_ctx) return;
+        const canvas = _ctx.canvas;
+        const dpr = window.devicePixelRatio || 1;
+        const w = canvas.width / dpr;
+        const h = canvas.height / dpr;
+
+        if(isEmpty){
+          drawEmptyState(_ctx, w, h);
+          return;
+        }
+
+        // 카드 패널이 사용자에 의해(close 버튼) 닫히면 흩어진 군집을 원위치로 복귀시킨다.
+        if(activeCluster){
+          const panel = document.getElementById("card-panel");
+          if(panel && panel.hidden){
+            revertCluster(activeCluster);
+            activeCluster = null;
+          }
+        }
+
+        clusters.forEach(function(cluster){
+          cluster.particles.forEach(function(p){
+            p.update(0.05, 0.88);
+            p.draw(_ctx);
+          });
+          drawLabel(_ctx, cluster);
+        });
+      },
+      onClick(x, y){
+        if(!_ctx || !clusters.length) return;
+        let hit = null;
+        for(let i = 0; i < clusters.length; i++){
+          const c = clusters[i];
+          const dx = x - c.cx, dy = y - c.cy;
+          if(Math.sqrt(dx * dx + dy * dy) <= c.hitRadius){ hit = c; break; }
+        }
+        if(!hit) return;
+
+        if(activeCluster === hit){
+          renderCard(hit.persona);
+          return;
+        }
+
+        const canvas = _ctx.canvas;
+        const dpr = window.devicePixelRatio || 1;
+        const w = canvas.width / dpr;
+        const h = canvas.height / dpr;
+
+        if(activeCluster) revertCluster(activeCluster);
+        scatterCluster(hit, w, h);
+        activeCluster = hit;
+        renderCard(hit.persona);
+      },
+      exit(){
+        if(activeCluster){
+          revertCluster(activeCluster);
+          activeCluster = null;
+        }
+        const panel = document.getElementById("card-panel");
+        if(panel){ panel.hidden = true; panel.innerHTML = ""; }
+        _ctx = null;
+        clusters = [];
+      }
+    };
+  }
+
+  // ---------------------------------------------------------------------
   // 3. Scene registry — 4개 탭이 구현해야 하는 공통 인터페이스.
   //
   //    각 씬 객체는 다음 메서드를 구현한다:
@@ -237,7 +448,7 @@
   }
 
   const sceneRegistry = {
-    constellation: makePlaceholderScene("Constellation"),
+    constellation: makeConstellationScene(),
     needs: makePlaceholderScene("Needs Landscape"),
     journeys: makePlaceholderScene("Journey Emotions"),
     decisions: makePlaceholderScene("Decision Log")
