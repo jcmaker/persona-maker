@@ -2,23 +2,20 @@
 persona_id: p01
 stages: [awareness, consideration, decision, usage, advocacy]
 emotions: [1, -1, 0, 2, 1]
-touchpoints: ["트위터 스레드", "랜딩 페이지", "무료 체험 신청", "온보딩 튜토리얼", "팀 슬랙 공유"]
-pain_points: ["비슷한 도구가 너무 많아 비교가 어려움", "가격표가 복잡해서 예산 승인 받기 힘듦", "튜토리얼이 길어 끝까지 안 봄"]
+touchpoints: ["Twitter thread", "Landing page", "Free-trial signup", "Onboarding tutorial", "Team Slack share"]
+pain_points: ["Too many similar tools to compare", "Pricing table too complex to get budget approval", "Tutorial too long to finish"]
 ---
 
-## 단계별 여정
+## Stage-by-stage journey
 
-| 단계 | 감정 점수 | 접점 | 페인 포인트 |
+| Stage | Emotion | Touchpoint | Pain point |
 | --- | --- | --- | --- |
-| awareness | 1 | 트위터 스레드 | 비슷한 도구가 너무 많아 비교가 어려움 |
-| consideration | -1 | 랜딩 페이지 | 가격표가 복잡해서 예산 승인 받기 힘듦 |
-| decision | 0 | 무료 체험 신청 | 결제 없이 팀원에게 공유할 방법이 마땅치 않음 |
-| usage | 2 | 온보딩 튜토리얼 | 튜토리얼이 길어 끝까지 안 봄 |
-| advocacy | 1 | 팀 슬랙 공유 | 공유할 때 요약 카드가 없어 직접 캡처해야 함 |
+| awareness | 1 | Twitter thread | Too many similar tools to compare |
+| consideration | -1 | Landing page | Pricing table too complex to get budget approval |
+| decision | 0 | Free-trial signup | No easy way to share with teammates without paying |
+| usage | 2 | Onboarding tutorial | Tutorial too long to finish |
+| advocacy | 1 | Team Slack share | No summary card to share, so she has to screenshot manually |
 
-## 요약
+## Summary
 
-김서연은 트위터에서 도구를 처음 접한 뒤(awareness, +1) 랜딩 페이지의 복잡한 가격 정보를 보고
-잠시 주춤한다(consideration, -1). 무료 체험을 신청하며 감정은 중립으로 돌아오고(decision, 0),
-실제로 온보딩을 마친 뒤 재작업이 줄어드는 것을 체감하며 만족도가 크게 오른다(usage, +2).
-이후 팀 슬랙에 공유하며 긍정적인 태도를 유지한다(advocacy, +1).
+Seoyeon first encounters the tool on Twitter (awareness, +1), then hesitates at the landing page's complex pricing (consideration, -1). Signing up for the free trial brings her emotion back to neutral (decision, 0), and after actually finishing onboarding she feels rework drop and her satisfaction rises sharply (usage, +2). She then shares it in the team Slack, keeping a positive attitude (advocacy, +1).

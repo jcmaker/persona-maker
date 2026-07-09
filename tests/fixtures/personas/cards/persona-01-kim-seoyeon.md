@@ -1,31 +1,31 @@
 ---
 id: p01
-name: "김서연"
+name: "Seoyeon Kim"
 role: primary
-archetype: "바쁜 실무 디자이너"
+archetype: "Time-strapped hands-on designer"
 confidence: assumption
 sources: []
-demographics: { age: 32, occupation: "프로덕트 디자이너", context: "5인 스타트업" }
-goals: ["빠른 의사결정 근거 확보", "재작업 최소화", "팀 설득 자료 확보"]
-frustrations: ["감으로 결정했다가 재작업", "리서치 시간 부족", "이해관계자마다 다른 의견"]
-behaviors: ["새 도구는 동료 추천으로만 도입", "아침에 지표 확인", "결정 전 레퍼런스 수집"]
+demographics: { age: 32, occupation: "Product designer", context: "5-person startup" }
+goals: ["Secure fast evidence for decisions", "Minimize rework", "Have material to persuade the team"]
+frustrations: ["Deciding on gut feeling, then reworking", "No time for research", "Every stakeholder has a different opinion"]
+behaviors: ["Adopts new tools only on a colleague's recommendation", "Checks metrics every morning", "Collects references before deciding"]
 tech_savviness: 4
-quote: "제 취향이 아니라 사용자가 원하는 걸 알고 싶어요"
+quote: "I want to know what users want, not what I happen to like"
 ---
 
-## 서사
+## Narrative
 
-김서연은 5인 규모 스타트업에서 유일한 프로덕트 디자이너로 일한다. 기획, 개발, 대표까지 매번 다른 의견을 내는 환경에서 그녀는 "제 취향이 아니라 사용자가 원하는 것"을 근거로 결정을 밀어붙이고 싶어 한다. 하지만 정식 리서치를 진행할 시간도 예산도 없어, 매번 감으로 판단한 화면이 스프린트 막바지에 뒤집히는 일이 반복된다. 이런 재작업이 누적되면서 그녀는 빠르게 근거를 확보할 수 있는 가벼운 도구를 찾고 있다.
+Seoyeon is the only product designer at a 5-person startup. In an environment where the PM, engineers, and CEO each pull in a different direction, she wants to push decisions based on "what users want, not my taste." But with no time or budget for formal research, screens she judged on gut feeling keep getting overturned at the end of the sprint. As this rework piles up, she is looking for a lightweight tool that gives her evidence quickly.
 
-## 니즈 상세
+## Needs detail
 
-- 하루 30분 이내로 확인할 수 있는 수준의 리서치 근거가 필요하다.
-- 이해관계자 회의에서 바로 인용할 수 있는 형태의 요약 자료가 필요하다.
-- 리서치 결과가 "감"이 아니라 데이터에 기반했다는 것을 증명할 수 있어야 한다.
-- 매 스프린트마다 반복 사용 가능한, 재사용 가능한 프로세스가 필요하다.
+- She needs research evidence at a level she can review in under 30 minutes a day.
+- She needs summary material she can cite directly in stakeholder meetings.
+- She needs to prove her research was based on data, not "gut feeling."
+- She needs a reusable process she can run every sprint.
 
-## 이 페르소나가 반대할 결정들
+## Decisions this persona would push back on
 
-- 리서치 없이 대표의 직관만으로 화면 구조를 확정하는 것
-- 완성도보다 속도를 우선해 사용자 테스트를 건너뛰는 것
-- 근거 자료 없이 "트렌드니까"라는 이유로 디자인을 바꾸는 것
+- Locking the screen structure on the CEO's intuition alone, with no research
+- Skipping user testing to prioritize speed over quality
+- Changing a design "because it's trendy" with no supporting evidence
