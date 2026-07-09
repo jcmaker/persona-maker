@@ -101,7 +101,7 @@ description: 제품 아이디어 설명이나 인터뷰 노트를 니즈/불만/
 
 마지막으로 다음 단계를 안내하라:
 
-- `personas/cards/`가 아직 없으면: "`/persona-maker:generate`로 페르소나를
-  생성하세요."
+- `personas/cards/`에 카드가 아직 없으면: "`/persona-maker:generate`로
+  페르소나를 생성하세요."
 - `personas/cards/`에 이미 카드가 있으면: "`/persona-maker:generate
   --update`로 기존 페르소나를 갱신하세요."
