@@ -1,4 +1,6 @@
 """persona-maker visualizer builder. Stdlib only."""
+import json
+import pathlib
 import re
 
 def _parse_value(raw):
@@ -47,3 +49,66 @@ def parse_frontmatter(text):
         key, _, val = line.partition(":")
         meta[key.strip()] = _parse_value(val)
     return meta, m.group(2)
+
+DEFAULT_CONFIG = {"model": "haiku", "persona_count": 5, "language": "ko"}
+REQUIRED_CARD_FIELDS = ["id", "name", "role", "confidence"]
+
+def _collect_markdown(dir_path, warnings):
+    """cards/journeys/consultations 등 md 디렉토리를 정렬 순회하며 frontmatter를 파싱한다.
+    파싱 실패 파일은 건너뛰고 warnings에 기록한다. 크래시하지 않는다."""
+    items = []
+    if not dir_path.is_dir():
+        warnings.append(f"{dir_path.name}/ 디렉토리를 찾을 수 없습니다 ({dir_path})")
+        return items
+    for path in sorted(dir_path.glob("*.md")):
+        text = path.read_text(encoding="utf-8")
+        try:
+            meta, body = parse_frontmatter(text)
+        except ValueError as e:
+            warnings.append(f"{path.name}: frontmatter 파싱 실패 - {e}")
+            continue
+        meta["body"] = body.strip()
+        items.append(meta)
+    return items
+
+def _load_config(personas_dir, warnings):
+    config_path = personas_dir / "config.json"
+    if not config_path.is_file():
+        warnings.append(f"config.json을 찾을 수 없어 기본값을 사용합니다 ({config_path})")
+        return dict(DEFAULT_CONFIG)
+    try:
+        return json.loads(config_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as e:
+        warnings.append(f"config.json 파싱 실패 - 기본값을 사용합니다: {e}")
+        return dict(DEFAULT_CONFIG)
+
+def collect(personas_dir):
+    """personas_dir(config.json, cards/, journeys/, consultations/)을 읽어
+    시각화에 필요한 데이터를 모은다. 파싱/검증 실패는 절대 크래시로 이어지지 않고
+    warnings 리스트에 쌓인다."""
+    personas_dir = pathlib.Path(personas_dir)
+    warnings = []
+
+    config = _load_config(personas_dir, warnings)
+    personas = _collect_markdown(personas_dir / "cards", warnings)
+    journeys = _collect_markdown(personas_dir / "journeys", warnings)
+    consultations = _collect_markdown(personas_dir / "consultations", warnings)
+
+    for p in personas:
+        pid = p.get("id", "?")
+        for field in REQUIRED_CARD_FIELDS:
+            if field in p:
+                continue
+            if field == "confidence":
+                p["confidence"] = "assumption"
+            else:
+                p[field] = ""
+            warnings.append(f"{pid}: 필수 필드 '{field}' 누락")
+
+    return {
+        "config": config,
+        "personas": personas,
+        "journeys": journeys,
+        "consultations": consultations,
+        "warnings": warnings,
+    }
