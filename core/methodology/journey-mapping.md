@@ -1,57 +1,59 @@
-# journey-mapping.md — 저니맵 생성 규칙
+# journey-mapping.md — Journey Map Generation Rules
 
-> **대상 독자:** 이 문서는 persona-generator 서브에이전트가 저니맵 1건을 생성할 때
-> 그대로 따라야 하는 지시문이다. 저니맵은 페르소나 1명이 제품을 인지하는 순간부터
-> 옹호(추천)하는 순간까지 5단계를 거치며 무엇을 겪는지 기록한다.
+> **Audience:** This document is the instruction set the persona-generator
+> subagent follows verbatim when generating a single journey map. A journey map
+> records what one persona experiences across 5 stages, from the moment they
+> become aware of the product to the moment they advocate for (recommend) it.
 
-## 1. 대상
+## 1. Scope
 
-- `role: primary` 또는 `role: secondary` 페르소나에 대해서만 저니맵을 생성한다.
-- **`role: anti` 페르소나는 저니맵을 생성하지 않는다.** anti-persona는 제품을 쓰지
-  않는 사용자이므로 사용 여정이 존재하지 않는다(`persona-framework.md` §4 참조).
-  생성 스킬이 실수로 anti용 저니맵 파일을 만들었다면 삭제한다.
+- Generate a journey map only for `role: primary` or `role: secondary` personas.
+- **Do not generate a journey map for a `role: anti` persona.** An anti-persona
+  does not use the product, so a usage journey does not exist (see
+  `persona-framework.md` §4). If the generating skill accidentally created a
+  journey file for an anti-persona, delete it.
 
-## 2. 5단계 고정
+## 2. Fixed 5 stages
 
-`stages` 필드는 항상 아래 5개를 **이 순서 그대로** 사용한다. 추가·삭제·순서 변경
-금지.
+The `stages` field always uses the following 5 values **in this exact order**.
+No adding, removing, or reordering.
 
-1. `awareness` (인지) — 문제를 인식하거나 제품 존재를 처음 알게 되는 단계
-2. `consideration` (고려) — 대안과 비교하며 검토하는 단계
-3. `decision` (결정) — 실제로 쓰기로/안 쓰기로 결정하는 단계
-4. `usage` (사용) — 실제 사용 중 겪는 경험
-5. `advocacy` (옹호) — 계속 쓰거나 추천/이탈하는 단계
+1. `awareness` — becoming aware of the problem or first learning the product exists
+2. `consideration` — comparing alternatives and evaluating
+3. `decision` — actually deciding to use / not use it
+4. `usage` — the experience during real use
+5. `advocacy` — continuing, recommending, or churning
 
-## 3. 단계별 기록 항목
+## 3. Per-stage recording items
 
-단계마다 본문 표에 아래 5개 열을 채운다.
+Fill the following 5 columns in the body table for each stage.
 
-| 항목 | 설명 |
+| Item | Description |
 |---|---|
-| 행동 | 이 단계에서 페르소나가 실제로 하는 행동(관찰 가능한 동작) |
-| 생각 | 그 순간 머릿속에 떠오르는 생각(내적 독백, 1인칭 가능) |
-| 감정 점수 | -2~+2 정수. `emotions` 배열의 해당 인덱스와 반드시 일치해야 한다. |
-| 터치포인트 | 이 단계에서 접하는 채널/화면/사람(예: 랜딩페이지, 동료 추천, 결제 화면) |
-| pain point | 이 단계에서 겪는 마찰. 모든 단계에 반드시 하나씩 찾아 적는다 — 사소한 것이라도 "없음"으로 비워두지 않는다. 마찰이 전혀 없는 단계는 비현실적이다. |
+| Action | What the persona actually does at this stage (observable behavior) |
+| Thought | What runs through their mind at that moment (inner monologue, first person OK) |
+| Emotion score | Integer -2 to +2. Must match the corresponding index of the `emotions` array. |
+| Touchpoint | The channel/screen/person encountered at this stage (e.g., landing page, colleague referral, checkout screen) |
+| Pain point | The friction at this stage. Always find one for every stage — do not leave it blank as "none." A stage with zero friction is unrealistic. |
 
-## 4. 감정 점수 규칙
+## 4. Emotion score rules
 
-- `emotions`는 정수 5개 배열이며 순서는 `stages`와 1:1 대응한다(인덱스 0=awareness
-  … 4=advocacy).
-- 각 값은 `-2, -1, 0, 1, 2` 중 하나만 사용한다.
-- **5단계 전부 양수(+1 또는 +2)로 채우는 것을 금지한다.** 이는 비현실적 낙관이며
-  positivity bias의 대표 증상이다.
-- **최소 한 단계는 반드시 0 이하(0, -1, -2)여야 한다.** 저장 전 배열을 훑어 이
-  조건을 확인한다. 위반 시 저니맵을 다시 쓴다.
-- 감정 곡선을 단조 증가(계속 좋아지기만)로 그리는 것은 권장하지 않는다. 실제
-  사용자 경험은 `usage` 단계에서 학습곡선·오류로 인해 일시적으로 하락했다가
-  회복되는 경우가 흔하다. 곡선에 굴곡을 만들어라.
+- `emotions` is an array of 5 integers, corresponding 1:1 with `stages` in order
+  (index 0 = awareness … 4 = advocacy).
+- Each value must be one of `-2, -1, 0, 1, 2`.
+- **All 5 stages being positive (+1 or +2) is forbidden.** That is unrealistic
+  optimism and a hallmark symptom of positivity bias.
+- **At least one stage must be 0 or below (0, -1, -2).** Scan the array before
+  saving to confirm this. If violated, rewrite the journey map.
+- A monotonically increasing curve (only ever improving) is discouraged. Real
+  user experience often dips temporarily in the `usage` stage due to learning
+  curves and errors, then recovers. Give the curve some texture.
 
-## 5. 생성 전 최종 점검 체크리스트
+## 5. Pre-save final checklist
 
-- [ ] 대상 페르소나가 `anti`가 아닌가
-- [ ] `stages`가 정확히 5개, §2 순서 그대로인가
-- [ ] `emotions`가 정수 5개이고 `stages`와 인덱스가 정확히 대응하는가
-- [ ] `emotions` 전부가 양수는 아닌가(최소 1개는 0 이하)
-- [ ] 5단계 모두에 pain point가 적혀 있는가
-- [ ] 감정 점수가 -2~+2 범위를 벗어나지 않는가
+- [ ] Is the target persona not an `anti`?
+- [ ] Is `stages` exactly 5 items, in the §2 order?
+- [ ] Is `emotions` 5 integers, indexed 1:1 with `stages`?
+- [ ] Is `emotions` not all-positive (at least 1 is 0 or below)?
+- [ ] Does every one of the 5 stages have a pain point?
+- [ ] Do all emotion scores stay within the -2 to +2 range?

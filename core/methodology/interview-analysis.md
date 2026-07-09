@@ -1,87 +1,94 @@
-# interview-analysis.md — 인터뷰 → 인사이트 추출 절차
+# interview-analysis.md — Interview → Insight Extraction Procedure
 
-> **대상 독자:** 이 문서는 `research` 스킬(메인 세션 모델이 직접 수행)이 인터뷰
-> 노트를 `research/insights.md`로 정리할 때 그대로 따라야 하는 절차다. 추측과
-> 직접 증거를 섞으면 `confidence-levels.md`의 신뢰도 등급 체계 전체가 무너진다.
-> 이 문서는 "무엇이 증거로 인정되는지"를 엄격히 규정한다.
+> **Audience:** This document is the procedure the `research` skill (performed
+> directly by the main-session model) follows verbatim when organizing interview
+> notes into `research/insights.md`. Mixing speculation with direct evidence
+> collapses the entire confidence-grading system in `confidence-levels.md`. This
+> document strictly defines "what counts as evidence."
 
-## 1. 입력 형식
+## 1. Input format
 
-인터뷰 노트는 다음 경로에 저장한다.
+Store interview notes at the following path.
 
 ```
-research/interview-NN-<참가자별칭>.md
+research/interview-NN-<participant-alias>.md
 ```
 
-- `NN`은 2자리 순번(`01`, `02`, …)이다.
-- 참가자 실명 대신 별칭을 사용한다(개인정보 보호).
-- 원문은 **그대로 붙여넣기 허용**한다 — 요약·정제 없이 저장한 원본 노트를 이
-  파일에 둔다. 가공·정리는 이 문서의 §2 절차에서 별도로 수행하며 원본 파일 자체는
-  건드리지 않는다.
+- `NN` is a 2-digit sequence number (`01`, `02`, …).
+- Use an alias instead of the participant's real name (privacy protection).
+- The raw text **may be pasted as-is** — store the original notes in this file
+  without summarizing or refining. Processing/cleanup happens separately in the
+  §2 procedure; the original file itself is never touched.
 
-## 2. 추출 절차
+## 2. Extraction procedure
 
-아래 3단계를 순서대로 수행한다.
+Perform the following 3 steps in order.
 
-### ① 증거 문장 추출
+### ① Extract evidence sentences
 
-인터뷰 원문에서 다음 세 범주에 해당하는 발화를 찾아 그대로(또는 최소 편집으로)
-뽑아낸다.
+From the interview transcript, find and extract (verbatim, or with minimal
+editing) utterances falling into these three categories.
 
-- **니즈**: 참가자가 원하거나 필요로 한다고 말한 것
-- **불만**: 참가자가 불편·문제로 지목한 것
-- **행동**: 참가자가 실제로 한다고 말한 구체적 행동(희망사항이 아니라 실제 행동)
+- **Needs**: things the participant said they want or need
+- **Frustrations**: things the participant pointed to as inconvenient/problematic
+- **Behaviors**: concrete actions the participant said they actually do (real
+  behavior, not aspirations)
 
-원문에 없는 내용을 만들어내지 않는다. 참가자가 말하지 않은 것은 증거가 아니다.
+Do not invent anything not in the transcript. What the participant did not say
+is not evidence.
 
-### ② 태그 부여
+### ② Tag
 
-추출한 각 증거 문장에 `[I-NN]` 태그를 붙인다(`NN`은 해당 인터뷰 파일의 순번과
-동일). 예:
+Attach an `[I-NN]` tag to each extracted evidence sentence (`NN` matches the
+sequence number of that interview file). Example:
 
-> "회의 직전에 결정 근거를 못 찾아서 슬랙으로 동료한테 물어봐요." `[I-03]`
+> "Just before the meeting, I can't find the rationale for a decision so I ask a
+> colleague on Slack." `[I-03]`
 
-같은 인터뷰에서 나온 증거는 전부 같은 `[I-NN]`을 쓴다. 문장 단위로 별도 번호를
-매기지 않는다.
+All evidence from the same interview uses the same `[I-NN]`. Do not number
+sentences individually.
 
-### ③ 페르소나 속성 매핑
+### ③ Map to persona attributes
 
-태그가 붙은 증거 문장을 페르소나 필드(`goals`/`frustrations`/`behaviors` 등)에
-대응시켜 `research/insights.md`에 정리한다. 이때 아래 두 라벨을 반드시 구분해서
-표기한다.
+Map the tagged evidence sentences to persona fields
+(`goals`/`frustrations`/`behaviors`, etc.) and organize them in
+`research/insights.md`. Here you must always distinguish two labels.
 
-- **증거**: 참가자가 명시적으로 말한 내용 그대로. `[I-NN]` 태그를 붙인다.
-- **추론**: 여러 증거를 종합해 분석자가 판단한 내용(참가자가 직접 말하지 않음).
-  어떤 `[I-NN]` 증거들로부터 추론했는지 근거를 함께 남긴다.
+- **Evidence**: exactly what the participant said explicitly. Attach the
+  `[I-NN]` tag.
+- **Inference**: what the analyst judged by synthesizing multiple pieces of
+  evidence (not said directly by the participant). Note which `[I-NN]` evidence
+  the inference is based on.
 
-두 라벨을 섞어 쓰지 않는다. 추론을 증거처럼 표기하는 것이 positivity bias·과잉
-해석의 주된 원인이다. `generate` 단계에서 페르소나 카드를 쓸 때도 "증거" 라벨이
-붙은 항목만 `sources`로 연결한다 — "추론" 항목은 카드에 반영하더라도 근거 인용
-대상으로 삼지 않는다.
+Do not mix the two labels. Marking inference as evidence is the main cause of
+positivity bias / over-interpretation. When writing persona cards in the
+`generate` step, only link "evidence"-labeled items to `sources` — "inference"
+items may be reflected in the card but are not citation targets.
 
-## 3. 편향 경고: 표본 부족
+## 3. Bias warning: insufficient sample
 
-`insights.md`를 작성/갱신할 때마다 프로젝트 전체(`research/interview-*.md`
-전체)에서 서로 다른 참가자(별칭 기준) 수를 센다.
+Every time you write/update `insights.md`, count the number of distinct
+participants (by alias) across the whole project (`research/interview-*.md`).
 
-**참가자가 3명 미만이면 `insights.md` 상단에 다음 문구를 정확히 명시한다:**
+**If there are fewer than 3 participants, state the following verbatim at the
+top of `insights.md`:**
 
-> 표본 부족 — validated 등급 불가 (partial까지만 허용).
+> Insufficient sample — validated grade not allowed (partial is the ceiling).
 
-- 이 경고는 개별 페르소나의 `sources` 개수와 무관하게 적용되는 **프로젝트 전체
-  상한**이다. 참가자 풀이 좁으면 소수의 응답이 여러 페르소나 속성에 걸쳐 과대
-  해석됐을 위험이 크기 때문에, 특정 속성이 `confidence-levels.md` §1의 `partial`
-  조건(인터뷰 1~2건)을 기술적으로 만족해 보여도 프로젝트 전체 참가자가 3명 미만인
-  동안은 어떤 페르소나도 `partial`을 넘겨 `validated`를 부여하지 않는다.
-- 참가자가 3명 이상이 되면 이 경고 문구를 제거하고, 이후부터는
-  `confidence-levels.md`의 §1~§2 규칙을 정상 적용한다.
+- This warning is a **project-wide cap** that applies regardless of any
+  individual persona's `sources` count. A narrow respondent pool means a few
+  responses risk being over-interpreted across many persona attributes, so even
+  if a specific attribute technically meets the `partial` condition (1–2
+  interviews) in `confidence-levels.md` §1, no persona may exceed `partial` to
+  reach `validated` while total participants are fewer than 3.
+- Once there are 3 or more participants, remove this warning text and apply the
+  §1–§2 rules of `confidence-levels.md` normally from then on.
 
-## 4. 생성 전 최종 점검 체크리스트
+## 4. Pre-generation final checklist
 
-- [ ] 인터뷰 노트가 `research/interview-NN-<별칭>.md` 형식으로 저장됐는가
-- [ ] 증거 문장이 원문 발화에서 나왔는가(창작·과장 없음)
-- [ ] 모든 증거 문장에 `[I-NN]` 태그가 붙어 있는가
-- [ ] "증거"와 "추론"이 라벨로 명확히 구분됐는가
-- [ ] 참가자 3명 미만이면 "표본 부족 — validated 등급 불가 (partial까지만 허용)"
-      문구가 `insights.md`에 있는가
-- [ ] `generate` 단계로 넘길 `sources` 연결이 "증거" 라벨 항목에서만 이뤄졌는가
+- [ ] Are the interview notes stored as `research/interview-NN-<alias>.md`?
+- [ ] Did the evidence sentences come from the original utterances (no fabrication/exaggeration)?
+- [ ] Does every evidence sentence have an `[I-NN]` tag?
+- [ ] Are "evidence" and "inference" clearly distinguished by label?
+- [ ] If fewer than 3 participants, is the "Insufficient sample — validated grade not allowed (partial is the ceiling)" text in `insights.md`?
+- [ ] Were `sources` links for the `generate` step made only from "evidence"-labeled items?

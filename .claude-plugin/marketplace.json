@@ -9,7 +9,7 @@
     {
       "name": "persona-maker",
       "source": "./",
-      "description": "아이디어·인터뷰를 신뢰도 등급이 붙은 페르소나 카드·저니맵·particle 시각화로 만들고, 모든 의사결정을 페르소나 관점으로 검토하는 플러그인"
+      "description": "Turn ideas and interviews into confidence-graded persona cards, journey maps, and particle visualizations — then pressure-test every decision from the user's perspective"
     }
   ]
 }
