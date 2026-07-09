@@ -5,7 +5,7 @@ description: 페르소나 리서치·생성·시각화·의사결정 상담이 �
 
 # persona-maker (Codex 어댑터)
 
-Claude 플러그인(`claude-plugin/`)의 init/research/generate/visualize/consult
+Claude 플러그인(리포 루트의 `skills/`)의 init/research/generate/visualize/consult
 5개 스킬을 단일 파일로 통합한 Codex용 어댑터다. Codex에는 서브커맨드 구조가
 없으므로, 사용자 요청을 아래 "모드 판별" 표로 분류한 뒤 해당 모드 섹션의
 지시를 따른다.
@@ -37,7 +37,7 @@ Claude 플러그인(`claude-plugin/`)의 init/research/generate/visualize/consul
 | "이 결정 어떻게 생각할까", "페르소나들한테 물어봐줘", 기능/디자인 반응 확인 | `consult` |
 
 모드가 정해지면 아래 해당 섹션만 따른다. 각 섹션은 Claude 플러그인의 동명
-스킬(`claude-plugin/skills/<mode>/SKILL.md`)과 **동일한 게이트·절차·규칙**을
+스킬(`../skills/<mode>/SKILL.md`)과 **동일한 게이트·절차·규칙**을
 따르되, Codex 환경 차이(기본 모델, 경로, 서브에이전트 디스패치)만 다르다.
 
 ---
@@ -180,7 +180,7 @@ research 스킬 예시를 따른다(니즈/불만/행동 섹션, 각 항목에 `
   않는다) — 슬롯 간 혼선(차별화 축 누락, 등급 오적용)을 막기 위함이다.
 
 각 위임(또는 각 순차 생성 단계)에 아래 6종을 명시한다(원본 지시 전문은
-`claude-plugin/agents/persona-generator.md` 참조 — 카드마다 채워야 할 필수
+`../agents/persona-generator.md` 참조 — 카드마다 채워야 할 필수
 필드, YAML 부분집합 제약, positivity bias 금지 체크리스트가 정의되어 있다):
 
 1. `personas/research/insights.md` 경로
