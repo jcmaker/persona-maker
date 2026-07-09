@@ -409,6 +409,838 @@
   }
 
   // ---------------------------------------------------------------------
+  // 2c. Needs Landscape scene — Task 8.
+  //     전체 페르소나의 goals+frustrations를 유사 텍스트 기준으로 병합해
+  //     노드로 만들고, 공유 페르소나 수에 비례한 크기·궤도 파티클로 표현한다.
+  // ---------------------------------------------------------------------
+  function makeNeedsScene(){
+    const EMPTY_MESSAGE = "페르소나가 아직 없습니다 — /persona-maker:generate를 실행하세요";
+    const FRUSTRATION_COLOR = "#c1555f";
+    const NODE_MIN_GAP = 14;
+
+    function roleColorMap(){
+      return {
+        primary: cssVar("--accent-strong", "#38bdf8"),
+        secondary: cssVar("--text-dim", "#9aa4c0"),
+        anti: "#b06a6a"
+      };
+    }
+
+    function warningsOverlayHeight(){
+      // #warnings는 main 안에 position:absolute; bottom:0으로 캔버스 위에 겹쳐 그려진다.
+      // 노드/라벨이 그 뒤에 가려지지 않도록 실제 렌더 높이만큼 아래쪽 여백을 확보한다.
+      const el = document.getElementById("warnings");
+      if(!el || el.hidden) return 0;
+      return el.getBoundingClientRect().height;
+    }
+
+    function normalizeText(s){ return String(s || "").replace(/\s+/g, ""); }
+
+    function mergeInto(list, text, personaId){
+      const norm = normalizeText(text);
+      if(!norm) return;
+      for(let i = 0; i < list.length; i++){
+        const node = list[i];
+        for(let j = 0; j < node.normTexts.length; j++){
+          const other = node.normTexts[j];
+          if(norm === other || norm.indexOf(other) !== -1 || other.indexOf(norm) !== -1){
+            node.personaIds.add(personaId);
+            node.normTexts.push(norm);
+            return;
+          }
+        }
+      }
+      list.push({ label: text, normTexts: [norm], personaIds: new Set([personaId]) });
+    }
+
+    function buildNodes(personas){
+      const roleById = {};
+      personas.forEach(function(p){ roleById[p.id] = p.role; });
+
+      const goalRaw = [];
+      const frustRaw = [];
+      personas.forEach(function(p){
+        (p.goals || []).forEach(function(g){ mergeInto(goalRaw, g, p.id); });
+        (p.frustrations || []).forEach(function(f){ mergeInto(frustRaw, f, p.id); });
+      });
+
+      function toNode(n, type){
+        const personaIdList = Array.from(n.personaIds);
+        const count = personaIdList.length;
+        const names = personaIdList.map(function(id){
+          const found = personas.find(function(p){ return p.id === id; });
+          return found ? found.name : id;
+        });
+        return {
+          type: type,
+          label: n.label,
+          count: count,
+          radius: 18 + count * 10,
+          personaIds: personaIdList,
+          names: names,
+          particleCount: Math.max(4, Math.min(28, count * 5)),
+          cx: 0, cy: 0,
+          particles: [],
+          isTop: false
+        };
+      }
+
+      const nodes = goalRaw.map(function(n){ return toNode(n, "goal"); })
+        .concat(frustRaw.map(function(n){ return toNode(n, "frustration"); }));
+
+      const sorted = nodes.slice().sort(function(a, b){ return b.count - a.count; });
+      sorted.slice(0, 3).forEach(function(n){ n.isTop = true; });
+
+      return { nodes: nodes, roleById: roleById };
+    }
+
+    function layoutNodes(nodes, w, h){
+      const padTop = 30, padSide = 40, padBottom = 30 + warningsOverlayHeight();
+      const cols = Math.max(1, Math.ceil(Math.sqrt(nodes.length)));
+      const rows = Math.max(1, Math.ceil(nodes.length / cols));
+      const cellW = (w - padSide * 2) / cols;
+      const cellH = (h - padTop - padBottom) / rows;
+      nodes.forEach(function(node, i){
+        const col = i % cols, row = Math.floor(i / cols);
+        node.cx = padSide + cellW * (col + 0.5) + (Math.random() - 0.5) * cellW * 0.35;
+        node.cy = padTop + cellH * (row + 0.5) + (Math.random() - 0.5) * cellH * 0.35;
+      });
+      for(let iter = 0; iter < 200; iter++){
+        let moved = false;
+        for(let i = 0; i < nodes.length; i++){
+          for(let j = i + 1; j < nodes.length; j++){
+            const a = nodes[i], b = nodes[j];
+            const dx = b.cx - a.cx, dy = b.cy - a.cy;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 0.001;
+            const minDist = a.radius + b.radius + NODE_MIN_GAP;
+            if(dist < minDist){
+              moved = true;
+              const overlap = (minDist - dist) / 2;
+              const ux = dx / dist, uy = dy / dist;
+              a.cx -= ux * overlap; a.cy -= uy * overlap;
+              b.cx += ux * overlap; b.cy += uy * overlap;
+            }
+          }
+        }
+        nodes.forEach(function(n){
+          n.cx = Math.min(w - padSide, Math.max(padSide, n.cx));
+          n.cy = Math.min(h - padBottom, Math.max(padTop, n.cy));
+        });
+        if(!moved) break;
+      }
+    }
+
+    function buildParticles(nodes, roleById){
+      const colors = roleColorMap();
+      nodes.forEach(function(node){
+        const particleColors = node.personaIds.map(function(id){
+          return colors[roleById[id]] || colors.secondary;
+        });
+        const orbitBase = node.radius + 9;
+        const particles = [];
+        for(let i = 0; i < node.particleCount; i++){
+          particles.push({
+            angle: Math.random() * Math.PI * 2,
+            speed: (0.0006 + Math.random() * 0.0007) * (Math.random() < 0.5 ? 1 : -1),
+            orbitR: orbitBase + Math.random() * 7,
+            color: particleColors[i % particleColors.length] || colors.secondary
+          });
+        }
+        node.particles = particles;
+      });
+    }
+
+    function truncateLabel(s){
+      s = String(s || "");
+      return s.length > 14 ? s.slice(0, 13) + "…" : s;
+    }
+
+    function drawEmptyState(ctx, w, h){
+      ctx.save();
+      ctx.fillStyle = cssVar("--text-dim", "#9aa4c0");
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "14px -apple-system, sans-serif";
+      ctx.fillText(EMPTY_MESSAGE, w / 2, h / 2);
+      ctx.restore();
+    }
+
+    function drawNodeAndParticles(ctx, node, dt){
+      const isFrust = node.type === "frustration";
+      const baseColor = isFrust ? FRUSTRATION_COLOR : cssVar("--accent-strong", "#38bdf8");
+      ctx.save();
+      ctx.globalAlpha = node.isTop ? 0.24 : 0.14;
+      ctx.fillStyle = baseColor;
+      ctx.beginPath();
+      ctx.arc(node.cx, node.cy, node.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.lineWidth = node.isTop ? 2.4 : 1.4;
+      ctx.strokeStyle = baseColor;
+      ctx.stroke();
+      ctx.restore();
+
+      node.particles.forEach(function(p){
+        p.angle += p.speed * dt;
+        const x = node.cx + p.orbitR * Math.cos(p.angle);
+        const y = node.cy + p.orbitR * Math.sin(p.angle);
+        ctx.save();
+        ctx.globalAlpha = 0.9;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(x, y, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      if(node.isTop){
+        ctx.fillStyle = cssVar("--text", "#e8ecf8");
+        ctx.font = "700 11px -apple-system, sans-serif";
+        ctx.fillText("★ TOP", node.cx, node.cy + node.radius + 4);
+        ctx.font = "700 12.5px -apple-system, sans-serif";
+        ctx.fillText(truncateLabel(node.label), node.cx, node.cy + node.radius + 18);
+      } else {
+        ctx.fillStyle = cssVar("--text-dim", "#9aa4c0");
+        ctx.font = "10.5px -apple-system, sans-serif";
+        ctx.fillText(truncateLabel(node.label), node.cx, node.cy + node.radius + 4);
+      }
+      ctx.restore();
+    }
+
+    function drawTooltip(ctx, node, mx, my){
+      const lines = [(node.type === "frustration" ? "⚠ " : "") + node.label]
+        .concat(node.names.map(function(n){ return "· " + n; }));
+      ctx.save();
+      ctx.font = "12px -apple-system, sans-serif";
+      const textW = Math.max.apply(null, lines.map(function(l){ return ctx.measureText(l).width; }));
+      const boxW = textW + 20;
+      const boxH = lines.length * 16 + 12;
+      const canvas = ctx.canvas;
+      const dpr = window.devicePixelRatio || 1;
+      const cw = canvas.width / dpr, ch = canvas.height / dpr;
+      let bx = mx + 14, by = my + 14;
+      if(bx + boxW > cw) bx = mx - boxW - 14;
+      if(by + boxH > ch) by = my - boxH - 14;
+      ctx.fillStyle = cssVar("--bg-elevated", "#131a30");
+      ctx.strokeStyle = cssVar("--border", "#26305090");
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      if(ctx.roundRect) ctx.roundRect(bx, by, boxW, boxH, 6); else ctx.rect(bx, by, boxW, boxH);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = cssVar("--text", "#e8ecf8");
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      lines.forEach(function(line, i){
+        ctx.fillText(line, bx + 10, by + 8 + i * 16);
+      });
+      ctx.restore();
+    }
+
+    let _ctx = null, _canvas = null, nodes = [], isEmpty = true;
+    let mouseX = -9999, mouseY = -9999;
+
+    function onMouseMove(evt){
+      const rect = _canvas.getBoundingClientRect();
+      mouseX = evt.clientX - rect.left;
+      mouseY = evt.clientY - rect.top;
+    }
+
+    return {
+      enter(ctx, data){
+        _ctx = ctx;
+        _canvas = ctx.canvas;
+        const personas = (data && data.personas) || [];
+        isEmpty = personas.length === 0;
+        mouseX = -9999; mouseY = -9999;
+        if(!isEmpty){
+          const dpr = window.devicePixelRatio || 1;
+          const w = _canvas.width / dpr, h = _canvas.height / dpr;
+          const built = buildNodes(personas);
+          nodes = built.nodes;
+          layoutNodes(nodes, w, h);
+          buildParticles(nodes, built.roleById);
+        } else {
+          nodes = [];
+        }
+        _canvas.addEventListener("mousemove", onMouseMove);
+      },
+      tick(dt){
+        if(!_ctx) return;
+        const canvas = _ctx.canvas;
+        const dpr = window.devicePixelRatio || 1;
+        const w = canvas.width / dpr, h = canvas.height / dpr;
+        if(isEmpty){ drawEmptyState(_ctx, w, h); return; }
+
+        let hovered = null;
+        nodes.forEach(function(node){
+          drawNodeAndParticles(_ctx, node, dt);
+          const dx = mouseX - node.cx, dy = mouseY - node.cy;
+          if(Math.sqrt(dx * dx + dy * dy) <= node.radius) hovered = node;
+        });
+        if(hovered) drawTooltip(_ctx, hovered, mouseX, mouseY);
+      },
+      onClick(x, y){ /* 호버 툴팁으로 충분 — 클릭 동작 없음 */ },
+      exit(){
+        if(_canvas) _canvas.removeEventListener("mousemove", onMouseMove);
+        _ctx = null; _canvas = null; nodes = [];
+      }
+    };
+  }
+
+  // ---------------------------------------------------------------------
+  // 2d. Journey Emotions scene — Task 8.
+  //     페르소나별 5단계 감정 곡선을 부드럽게 그리고, 곡선을 따라 흐르는
+  //     잔상 파티클로 여정의 흐름을 표현한다. 상단 칩으로 곡선을 토글한다.
+  // ---------------------------------------------------------------------
+  function makeJourneysScene(){
+    const EMPTY_MESSAGE = "저니맵이 아직 없습니다 — /persona-maker:generate를 실행하세요";
+    const STAGE_LABELS = ["awareness", "consideration", "decision", "usage", "advocacy"];
+    const CONFIDENCE_ALPHA = { assumption: 0.45, partial: 0.7, validated: 1.0 };
+    const PARTICLES_PER_CURVE = 3;
+    const TRAIL_LENGTH = 9;
+    const IMPROVEMENT_COLOR = "#c1555f";
+
+    function roleColorMap(){
+      return {
+        primary: cssVar("--accent-strong", "#38bdf8"),
+        secondary: cssVar("--text-dim", "#9aa4c0"),
+        anti: "#b06a6a"
+      };
+    }
+
+    function catmullRom(p0, p1, p2, p3, t){
+      const t2 = t * t, t3 = t2 * t;
+      return {
+        x: 0.5 * ((2 * p1.x) + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3),
+        y: 0.5 * ((2 * p1.y) + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3)
+      };
+    }
+
+    function sampleCurve(pts, samplesPerSeg){
+      const padded = [pts[0]].concat(pts, [pts[pts.length - 1]]);
+      const out = [];
+      for(let i = 1; i < padded.length - 2; i++){
+        for(let s = 0; s < samplesPerSeg; s++){
+          out.push(catmullRom(padded[i - 1], padded[i], padded[i + 1], padded[i + 2], s / samplesPerSeg));
+        }
+      }
+      out.push(pts[pts.length - 1]);
+      return out;
+    }
+
+    let _ctx = null, _canvas = null, curves = [], isEmpty = true;
+    let chips = [], visibility = {};
+    let chartGeom = null;
+    let improvementMarker = null;
+
+    function warningsOverlayHeight(){
+      // #warnings는 main 안에 position:absolute; bottom:0으로 캔버스 위에 겹쳐 그려진다.
+      // 축/라벨이 그 뒤에 가려지지 않도록 실제 렌더 높이만큼 아래쪽 여백을 확보한다.
+      const el = document.getElementById("warnings");
+      if(!el || el.hidden) return 0;
+      return el.getBoundingClientRect().height;
+    }
+
+    function buildGeometry(w, h){
+      const chipTop = 14, chipHeight = 24;
+      const chartTop = chipTop + chipHeight + 20;
+      const marginLeft = 46, marginRight = 24;
+      const marginBottom = 34 + warningsOverlayHeight();
+      const chartBottom = h - marginBottom;
+      const chartWidth = Math.max(40, w - marginLeft - marginRight);
+      const chartHeight = Math.max(40, chartBottom - chartTop);
+      return {
+        marginLeft: marginLeft, chartTop: chartTop, chartBottom: chartBottom,
+        chartWidth: chartWidth, chartHeight: chartHeight
+      };
+    }
+
+    function stageX(geom, i){ return geom.marginLeft + (geom.chartWidth * i) / (STAGE_LABELS.length - 1); }
+    function emotionY(geom, v){
+      const clamped = Math.max(-2, Math.min(2, v));
+      return geom.chartTop + geom.chartHeight - ((clamped + 2) / 4) * geom.chartHeight;
+    }
+
+    function buildCurves(journeys, personas, geom){
+      const personaById = {};
+      personas.forEach(function(p){ personaById[p.id] = p; });
+      const colors = roleColorMap();
+
+      return journeys.map(function(j){
+        const persona = personaById[j.persona_id];
+        const confidence = (persona && persona.confidence) || "assumption";
+        const color = colors[(persona && persona.role) || "secondary"] || colors.secondary;
+        const alpha = CONFIDENCE_ALPHA[confidence] != null ? CONFIDENCE_ALPHA[confidence] : CONFIDENCE_ALPHA.assumption;
+        const emotions = j.emotions || [];
+        const pts = STAGE_LABELS.map(function(_, i){
+          return { x: stageX(geom, i), y: emotionY(geom, emotions[i] != null ? emotions[i] : 0) };
+        });
+        const samples = sampleCurve(pts, 24);
+        const particles = [];
+        for(let i = 0; i < PARTICLES_PER_CURVE; i++){
+          particles.push({ t: i / PARTICLES_PER_CURVE, speed: 0.00018 + Math.random() * 0.00006, history: [] });
+        }
+        return {
+          personaId: j.persona_id,
+          name: persona ? persona.name : j.persona_id,
+          color: color,
+          alpha: alpha,
+          points: pts,
+          samples: samples,
+          particles: particles,
+          emotions: emotions
+        };
+      });
+    }
+
+    function computeImprovementMarker(curves, geom){
+      let best = null;
+      curves.forEach(function(c){
+        c.emotions.forEach(function(v, i){
+          if(v == null) return;
+          if(best === null || v < best.value || (v === best.value && i < best.stageIndex)){
+            best = { value: v, stageIndex: i };
+          }
+        });
+      });
+      if(!best) return null;
+      return { x: stageX(geom, best.stageIndex), y: emotionY(geom, best.value) };
+    }
+
+    function buildChips(ctx, curves){
+      const chipTop = 14, chipHeight = 24, gap = 8, padX = 12;
+      ctx.save();
+      ctx.font = "11.5px -apple-system, sans-serif";
+      let x = 14;
+      const built = curves.map(function(c){
+        const textW = ctx.measureText(c.name).width;
+        const chip = { personaId: c.personaId, name: c.name, color: c.color, x: x, y: chipTop, w: textW + padX * 2, h: chipHeight };
+        x += chip.w + gap;
+        return chip;
+      });
+      ctx.restore();
+      return built;
+    }
+
+    function drawEmptyState(ctx, w, h){
+      ctx.save();
+      ctx.fillStyle = cssVar("--text-dim", "#9aa4c0");
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "14px -apple-system, sans-serif";
+      ctx.fillText(EMPTY_MESSAGE, w / 2, h / 2);
+      ctx.restore();
+    }
+
+    function drawAxes(ctx, geom){
+      ctx.save();
+      ctx.strokeStyle = cssVar("--border", "#26305090");
+      ctx.fillStyle = cssVar("--text-dim", "#9aa4c0");
+      ctx.font = "11px -apple-system, sans-serif";
+
+      const zeroY = emotionY(geom, 0);
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(geom.marginLeft, zeroY);
+      ctx.lineTo(geom.marginLeft + geom.chartWidth, zeroY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      for(let v = -2; v <= 2; v++){
+        ctx.fillText(String(v), geom.marginLeft - 8, emotionY(geom, v));
+      }
+
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      STAGE_LABELS.forEach(function(label, i){
+        ctx.fillText(label, stageX(geom, i), geom.chartBottom + 8);
+      });
+      ctx.restore();
+    }
+
+    function drawChips(ctx, chips){
+      ctx.save();
+      chips.forEach(function(chip){
+        const visible = visibility[chip.personaId] !== false;
+        ctx.globalAlpha = visible ? 1 : 0.35;
+        ctx.fillStyle = cssVar("--bg-elevated", "#131a30");
+        ctx.strokeStyle = chip.color;
+        ctx.lineWidth = visible ? 2 : 1;
+        ctx.beginPath();
+        if(ctx.roundRect) ctx.roundRect(chip.x, chip.y, chip.w, chip.h, 999); else ctx.rect(chip.x, chip.y, chip.w, chip.h);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = visible ? cssVar("--text", "#e8ecf8") : cssVar("--text-dim", "#9aa4c0");
+        ctx.font = "11.5px -apple-system, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(chip.name, chip.x + chip.w / 2, chip.y + chip.h / 2 + 1);
+      });
+      ctx.restore();
+    }
+
+    function drawCurve(ctx, curve){
+      ctx.save();
+      ctx.globalAlpha = curve.alpha;
+      ctx.strokeStyle = curve.color;
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      curve.samples.forEach(function(pt, i){
+        if(i === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y);
+      });
+      ctx.stroke();
+      curve.points.forEach(function(pt){
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = curve.color;
+        ctx.fill();
+      });
+      ctx.restore();
+    }
+
+    function updateAndDrawParticles(ctx, curve, dt){
+      curve.particles.forEach(function(p){
+        p.t += p.speed * dt;
+        if(p.t > 1) p.t -= 1;
+        const idx = Math.min(curve.samples.length - 1, Math.floor(p.t * (curve.samples.length - 1)));
+        const pos = curve.samples[idx];
+        p.history.unshift({ x: pos.x, y: pos.y });
+        if(p.history.length > TRAIL_LENGTH) p.history.length = TRAIL_LENGTH;
+        p.history.forEach(function(hp, i){
+          const a = curve.alpha * (1 - i / TRAIL_LENGTH);
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, a);
+          ctx.fillStyle = curve.color;
+          ctx.beginPath();
+          ctx.arc(hp.x, hp.y, 3.2 * (1 - (i / TRAIL_LENGTH) * 0.6), 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        });
+      });
+    }
+
+    function drawImprovementMarker(ctx, marker){
+      if(!marker) return;
+      ctx.save();
+      ctx.strokeStyle = IMPROVEMENT_COLOR;
+      ctx.fillStyle = IMPROVEMENT_COLOR;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(marker.x, marker.y, 7, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "bottom";
+      ctx.font = "700 11.5px -apple-system, sans-serif";
+      ctx.fillText("▼ 개선 기회", marker.x, marker.y - 10);
+      ctx.restore();
+    }
+
+    function chipAt(x, y){
+      for(let i = 0; i < chips.length; i++){
+        const c = chips[i];
+        if(x >= c.x && x <= c.x + c.w && y >= c.y && y <= c.y + c.h) return c;
+      }
+      return null;
+    }
+
+    return {
+      enter(ctx, data){
+        _ctx = ctx;
+        _canvas = ctx.canvas;
+        const journeys = (data && data.journeys) || [];
+        const personas = (data && data.personas) || [];
+        isEmpty = journeys.length === 0;
+        if(!isEmpty){
+          const dpr = window.devicePixelRatio || 1;
+          const w = _canvas.width / dpr, h = _canvas.height / dpr;
+          chartGeom = buildGeometry(w, h);
+          curves = buildCurves(journeys, personas, chartGeom);
+          chips = buildChips(ctx, curves);
+          visibility = {};
+          curves.forEach(function(c){ visibility[c.personaId] = true; });
+          improvementMarker = computeImprovementMarker(curves, chartGeom);
+        } else {
+          curves = []; chips = []; visibility = {}; improvementMarker = null;
+        }
+      },
+      tick(dt){
+        if(!_ctx) return;
+        const canvas = _ctx.canvas;
+        const dpr = window.devicePixelRatio || 1;
+        const w = canvas.width / dpr, h = canvas.height / dpr;
+        if(isEmpty){ drawEmptyState(_ctx, w, h); return; }
+
+        drawAxes(_ctx, chartGeom);
+        curves.forEach(function(curve){
+          if(visibility[curve.personaId] === false) return;
+          drawCurve(_ctx, curve);
+          updateAndDrawParticles(_ctx, curve, dt);
+        });
+        drawImprovementMarker(_ctx, improvementMarker);
+        drawChips(_ctx, chips);
+      },
+      onClick(x, y){
+        const chip = chipAt(x, y);
+        if(!chip) return;
+        visibility[chip.personaId] = visibility[chip.personaId] === false ? true : false;
+      },
+      exit(){
+        _ctx = null; _canvas = null; curves = []; chips = []; visibility = {}; improvementMarker = null; chartGeom = null;
+      }
+    };
+  }
+
+  // ---------------------------------------------------------------------
+  // 2e. Decision Log scene — Task 8.
+  //     상담 목록에서 하나를 선택하면 참여 페르소나들의 반응(accept/neutral/reject)
+  //     에 따라 파티클 군집이 갈라져 이동한다.
+  // ---------------------------------------------------------------------
+  function makeDecisionsScene(){
+    const EMPTY_MESSAGE = "상담 기록이 아직 없습니다 — /persona-maker:consult를 실행하세요";
+    const PARTICLES_PER_PERSONA = 12;
+
+    function zoneColors(){
+      return {
+        accept: cssVar("--grade-validated", "#6ee7a0"),
+        neutral: cssVar("--text-dim", "#9aa4c0"),
+        reject: "#c1555f"
+      };
+    }
+
+    function buildListItems(consultations){
+      const itemH = 56, padTop = 16, padX = 14;
+      return consultations.map(function(c, i){
+        return { index: i, x: padX, y: padTop + i * (itemH + 8), h: itemH, topic: c.topic, date: c.date };
+      });
+    }
+
+    function personaLookup(personas){
+      const byId = {};
+      personas.forEach(function(p){ byId[p.id] = p; });
+      return byId;
+    }
+
+    function buildClusters(consultation, personaById, w, h, listWidth){
+      const zones = zoneColors();
+      const rightX0 = listWidth + 24, rightX1 = w - 24;
+      const rightW = Math.max(60, rightX1 - rightX0);
+      const zoneX = {
+        reject: rightX0 + rightW * 0.18,
+        neutral: rightX0 + rightW * 0.5,
+        accept: rightX0 + rightW * 0.82
+      };
+      const reactions = consultation.reactions || {};
+      const grouped = { accept: [], neutral: [], reject: [] };
+      Object.keys(reactions).forEach(function(id){
+        const r = reactions[id];
+        if(grouped[r]) grouped[r].push(id);
+      });
+
+      const clusters = [];
+      let assumptionCount = 0;
+      Object.keys(grouped).forEach(function(zone){
+        grouped[zone].forEach(function(id, zi){
+          const persona = personaById[id];
+          const name = persona ? persona.name : id;
+          if(persona && persona.confidence === "assumption") assumptionCount++;
+          const cy = h * 0.5 + (zi - (grouped[zone].length - 1) / 2) * 90;
+          const cx = zoneX[zone];
+          const particles = [];
+          for(let k = 0; k < PARTICLES_PER_PERSONA; k++){
+            const angle = Math.random() * Math.PI * 2;
+            particles.push(new Particle({
+              x: w / 2, y: h / 2,
+              target: { x: cx + Math.cos(angle) * (18 + Math.random() * 14), y: cy + Math.sin(angle) * (18 + Math.random() * 14) },
+              radius: 2 + Math.random(),
+              color: zones[zone],
+              alpha: 0.85
+            }));
+          }
+          clusters.push({ personaId: id, name: name, zone: zone, cx: cx, cy: cy, particles: particles });
+        });
+      });
+
+      return { clusters: clusters, assumptionCount: assumptionCount };
+    }
+
+    function drawEmptyState(ctx, w, h){
+      ctx.save();
+      ctx.fillStyle = cssVar("--text-dim", "#9aa4c0");
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "14px -apple-system, sans-serif";
+      ctx.fillText(EMPTY_MESSAGE, w / 2, h / 2);
+      ctx.restore();
+    }
+
+    function wrapText(ctx, text, x, y, maxWidth, lineHeight){
+      const chars = String(text || "").split("");
+      let line = "", ly = y, lines = 0;
+      for(let i = 0; i < chars.length && lines < 2; i++){
+        const test = line + chars[i];
+        if(ctx.measureText(test).width > maxWidth && line){
+          ctx.fillText(line, x, ly);
+          line = chars[i];
+          ly += lineHeight;
+          lines++;
+        } else {
+          line = test;
+        }
+      }
+      if(lines < 2) ctx.fillText(line, x, ly);
+    }
+
+    function drawList(ctx, items, listWidth, selectedIndex){
+      ctx.save();
+      ctx.strokeStyle = cssVar("--border", "#26305090");
+      ctx.beginPath();
+      ctx.moveTo(listWidth, 0);
+      ctx.lineTo(listWidth, ctx.canvas.height);
+      ctx.stroke();
+
+      items.forEach(function(item){
+        const selected = item.index === selectedIndex;
+        if(selected){
+          ctx.fillStyle = cssVar("--tab-active-bg", "#1c2440");
+          ctx.beginPath();
+          if(ctx.roundRect) ctx.roundRect(6, item.y - 6, listWidth - 12, item.h, 8); else ctx.rect(6, item.y - 6, listWidth - 12, item.h);
+          ctx.fill();
+        }
+        ctx.fillStyle = selected ? cssVar("--accent-strong", "#38bdf8") : cssVar("--text", "#e8ecf8");
+        ctx.font = "600 12.5px -apple-system, sans-serif";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        wrapText(ctx, item.topic, item.x, item.y, listWidth - item.x - 16, 15);
+        ctx.fillStyle = cssVar("--text-dim", "#9aa4c0");
+        ctx.font = "11px -apple-system, sans-serif";
+        ctx.fillText(item.date, item.x, item.y + 36);
+      });
+      ctx.restore();
+    }
+
+    function drawZoneLabels(ctx, listWidth, w, h){
+      const zones = zoneColors();
+      const rightX0 = listWidth + 24, rightX1 = w - 24;
+      const rightW = Math.max(60, rightX1 - rightX0);
+      const labelY = h * 0.14;
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "600 12px -apple-system, sans-serif";
+      ctx.fillStyle = zones.reject;
+      ctx.fillText("REJECT", rightX0 + rightW * 0.18, labelY);
+      ctx.fillStyle = zones.neutral;
+      ctx.fillText("NEUTRAL", rightX0 + rightW * 0.5, labelY);
+      ctx.fillStyle = zones.accept;
+      ctx.fillText("ACCEPT", rightX0 + rightW * 0.82, labelY);
+      ctx.restore();
+    }
+
+    function drawClusters(ctx, clusters){
+      clusters.forEach(function(cluster){
+        cluster.particles.forEach(function(p){
+          p.update(0.06, 0.85);
+          p.draw(ctx);
+        });
+        ctx.save();
+        ctx.fillStyle = cssVar("--text", "#e8ecf8");
+        ctx.font = "600 11.5px -apple-system, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        ctx.fillText(cluster.name, cluster.cx, cluster.cy + 34);
+        ctx.restore();
+      });
+    }
+
+    function warningsOverlayHeight(){
+      // #warnings는 main 안에 position:absolute; bottom:0으로 캔버스 위에 겹쳐 그려진다.
+      // 신뢰도 고지 문구가 그 뒤에 가려지지 않도록 실제 렌더 높이만큼 아래쪽 여백을 확보한다.
+      const el = document.getElementById("warnings");
+      if(!el || el.hidden) return 0;
+      return el.getBoundingClientRect().height;
+    }
+
+    function drawDisclaimer(ctx, h, text){
+      if(!text) return;
+      ctx.save();
+      ctx.fillStyle = cssVar("--warn-text", "#f5d9a0");
+      ctx.font = "12px -apple-system, sans-serif";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "bottom";
+      ctx.fillText(text, 14, h - 12 - warningsOverlayHeight());
+      ctx.restore();
+    }
+
+    let _ctx = null, _canvas = null, consultations = [], isEmpty = true;
+    let listItems = [], selectedIndex = -1, clusters = [], disclaimer = "";
+    let _personas = [], _listWidth = 0;
+
+    function selectConsultation(index, w, h){
+      selectedIndex = index;
+      const c = consultations[index];
+      if(!c){ clusters = []; disclaimer = ""; return; }
+      const built = buildClusters(c, personaLookup(_personas), w, h, _listWidth);
+      clusters = built.clusters;
+      disclaimer = built.assumptionCount > 0
+        ? "⚠ 이 결론은 assumption 등급 페르소나 " + built.assumptionCount + "명을 근거에 포함합니다"
+        : "";
+    }
+
+    return {
+      enter(ctx, data){
+        _ctx = ctx;
+        _canvas = ctx.canvas;
+        consultations = (data && data.consultations) || [];
+        _personas = (data && data.personas) || [];
+        isEmpty = consultations.length === 0;
+        selectedIndex = -1;
+        clusters = [];
+        disclaimer = "";
+        if(!isEmpty){
+          const dpr = window.devicePixelRatio || 1;
+          const w = _canvas.width / dpr, h = _canvas.height / dpr;
+          _listWidth = Math.max(180, Math.min(260, w * 0.28));
+          listItems = buildListItems(consultations);
+          selectConsultation(0, w, h);
+        }
+      },
+      tick(dt){
+        if(!_ctx) return;
+        const canvas = _ctx.canvas;
+        const dpr = window.devicePixelRatio || 1;
+        const w = canvas.width / dpr, h = canvas.height / dpr;
+        if(isEmpty){ drawEmptyState(_ctx, w, h); return; }
+
+        drawList(_ctx, listItems, _listWidth, selectedIndex);
+        drawZoneLabels(_ctx, _listWidth, w, h);
+        drawClusters(_ctx, clusters);
+        drawDisclaimer(_ctx, h, disclaimer);
+      },
+      onClick(x, y){
+        if(isEmpty || x > _listWidth) return;
+        const item = listItems.find(function(it){
+          return y >= it.y - 6 && y <= it.y - 6 + it.h + 4;
+        });
+        if(!item) return;
+        const canvas = _ctx.canvas;
+        const dpr = window.devicePixelRatio || 1;
+        const w = canvas.width / dpr, h = canvas.height / dpr;
+        selectConsultation(item.index, w, h);
+      },
+      exit(){
+        _ctx = null; _canvas = null; consultations = []; listItems = [];
+        selectedIndex = -1; clusters = []; disclaimer = ""; _personas = [];
+      }
+    };
+  }
+
+  // ---------------------------------------------------------------------
   // 3. Scene registry — 4개 탭이 구현해야 하는 공통 인터페이스.
   //
   //    각 씬 객체는 다음 메서드를 구현한다:
@@ -449,9 +1281,9 @@
 
   const sceneRegistry = {
     constellation: makeConstellationScene(),
-    needs: makePlaceholderScene("Needs Landscape"),
-    journeys: makePlaceholderScene("Journey Emotions"),
-    decisions: makePlaceholderScene("Decision Log")
+    needs: makeNeedsScene(),
+    journeys: makeJourneysScene(),
+    decisions: makeDecisionsScene()
   };
 
   let currentSceneName = null;
